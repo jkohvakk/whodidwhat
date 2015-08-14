@@ -3,12 +3,20 @@ import xml.etree.cElementTree as ET
 
 class SvnFilter(object):
 
-    def __init__(self, xml_log):
-        tree = ET.parse(xml_log)
-        self._root = tree.getroot()
+    def __init__(self):
+        pass
 
-    def get_logs_by_users(self, users):
-        for logentry in self._root.findall('logentry'):
+    def get_logs_by_users(self, xml_log, users):
+        tree = ET.parse(xml_log)
+        root = tree.getroot()
+        for logentry in root.findall('logentry'):
             if logentry.find('author').text not in users:
-                self._root.remove(logentry)
-        return self._root
+                root.remove(logentry)
+        return root
+
+    def read_userlist(self, userlist_file):
+        userlist = []
+        for line in userlist_file:
+            if line.strip() and not line.strip().startswith('#'):
+                userlist.append(line.strip())
+        return sorted(userlist)
