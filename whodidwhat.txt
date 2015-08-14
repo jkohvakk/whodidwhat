@@ -1,0 +1,7 @@
+1439527846|Janne Kohvakka|A|/.gitignore
+1439527846|Janne Kohvakka|A|/README.md
+1439527946|Mika Jarvi|D|foobar.cpp
+1439527946|Joulupukki|A|main/diiba/daaba/poo.h
+1439527946|Joulupukki|A|main/diiba/daaba/poo.c
+
+
