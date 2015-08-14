@@ -1,1 +1,3 @@
-print('Hi There')
+
+def console():
+    print('Hi There')
