@@ -8,18 +8,18 @@ MODULE_DIR = os.path.dirname(__file__)
 
 class TestFilterSvn(unittest.TestCase):
 
+    def setUp(self):
+        self.svn_xml = os.path.join(MODULE_DIR, 'sample_svn.xml')
+        self.log_filter = SvnFilter()
+
     def test_filtering_log_for_one_user(self):
-        sample_file = os.path.join(MODULE_DIR, 'sample_svn.xml')
-        log_filter = SvnFilter()
-        entries = log_filter.get_logs_by_users(sample_file, ['jkohvakk'])
+        entries = self.log_filter.get_logs_by_users(self.svn_xml, ['jkohvakk'])
         self.assertEqual(1, len(entries))
         self.assertEqual('213', entries[0].attrib['revision'])
         self.assertEqual('jkohvakk', entries[0].find('author').text)
 
     def test_filtering_log_for_two_users(self):
-        sample_file = os.path.join(MODULE_DIR, 'sample_svn.xml')
-        log_filter = SvnFilter()
-        entries = log_filter.get_logs_by_users(sample_file, ['kmikajar', 'jkohvakk'])
+        entries = self.log_filter.get_logs_by_users(self.svn_xml, ['kmikajar', 'jkohvakk'])
         self.assertEqual(2, len(entries))
         self.assertEqual('210', entries[0].attrib['revision'])
         self.assertEqual('kmikajar', entries[0].find('author').text)
