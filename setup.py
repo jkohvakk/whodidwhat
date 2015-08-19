@@ -66,7 +66,7 @@ setup(
     # pip to create the appropriate form of executable for the target platform.
     entry_points={
         'console_scripts': [
-            'whodidwhat=whodidwhat:console',
+            'whodidwhat=whodidwhat:whodidwhat',
         ],
     },
 )

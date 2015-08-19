@@ -12,7 +12,13 @@ class SvnFilter(object):
         for logentry in root.findall('logentry'):
             if logentry.find('author').text not in users:
                 root.remove(logentry)
-        return root
+        return tree, root
+
+    def filter_logs_by_users(self, xml_log, userlist_filename, outfile):
+        with open(userlist_filename) as userlist_file:
+            userlist = self.read_userlist(userlist_file)
+        filtered_et, _ = self.get_logs_by_users(xml_log, userlist)
+        filtered_et.write(outfile)
 
     def read_userlist(self, userlist_file):
         userlist = []

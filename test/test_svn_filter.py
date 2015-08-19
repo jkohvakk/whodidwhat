@@ -13,13 +13,13 @@ class TestFilterSvn(unittest.TestCase):
         self.log_filter = SvnFilter()
 
     def test_filtering_log_for_one_user(self):
-        entries = self.log_filter.get_logs_by_users(self.svn_xml, ['jkohvakk'])
+        _, entries = self.log_filter.get_logs_by_users(self.svn_xml, ['jkohvakk'])
         self.assertEqual(1, len(entries))
         self.assertEqual('213', entries[0].attrib['revision'])
         self.assertEqual('jkohvakk', entries[0].find('author').text)
 
     def test_filtering_log_for_two_users(self):
-        entries = self.log_filter.get_logs_by_users(self.svn_xml, ['kmikajar', 'jkohvakk'])
+        _, entries = self.log_filter.get_logs_by_users(self.svn_xml, ['kmikajar', 'jkohvakk'])
         self.assertEqual(2, len(entries))
         self.assertEqual('210', entries[0].attrib['revision'])
         self.assertEqual('kmikajar', entries[0].find('author').text)
@@ -29,13 +29,14 @@ class TestFilterSvn(unittest.TestCase):
     def test_read_userlist(self):
         userlist = '''
 #userlistfile
+#jkohvakk to make sure we really do not parse comments
 jkohvakk
 kmikajar
 basvodde
 
 '''
         self.assertEqual(['basvodde', 'jkohvakk', 'kmikajar'],
-                         SvnFilter().read_userlist(StringIO.StringIO(userlist)))
+                         self.log_filter.read_userlist(StringIO.StringIO(userlist)))
 
 
 if __name__ == "__main__":
