@@ -1,0 +1,2 @@
+# This is a comment
+https://svne1.access.nokiasiemensnetworks.com/isource/svnroot/ltetraining/python_intermediate/solutions
