@@ -1,6 +1,7 @@
 import unittest
 import os
 import StringIO
+import filecmp
 from whodidwhat.svnfilter import SvnFilter
 
 MODULE_DIR = os.path.dirname(__file__)
@@ -37,6 +38,15 @@ basvodde
 '''
         self.assertEqual(['basvodde', 'jkohvakk', 'kmikajar'],
                          self.log_filter.read_userlist(StringIO.StringIO(userlist)))
+
+    def test_parse_parameters_and_filter_one_xml(self):
+        usersfile = os.path.join(MODULE_DIR, 'userlist.txt')
+        output_xml = os.path.join(MODULE_DIR, 'output.xml')
+        expected_xml = os.path.join(MODULE_DIR, 'expected', 'filtered.xml')
+        self.log_filter.parse_parameters_and_filter(['whodidwhat', '--input-xml', self.svn_xml,
+                                                     '--users-file', usersfile,
+                                                     '--output-xml', output_xml])
+        self.assertTrue(filecmp.cmp(output_xml, expected_xml))
 
 
 if __name__ == "__main__":
