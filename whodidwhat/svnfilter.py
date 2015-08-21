@@ -10,7 +10,7 @@ class SvnFilter(object):
     def parse_parameters_and_filter(self, argv=None):
         parameters = self.parse_parameters(argv)
         if parameters.input_xml:
-            input_xmls = [parameters.input_xml.read()]
+            input_xmls = [SvnLogText(parameters.input_xml.read())]
         else:
             input_xmls = self._get_xml_logs(parameters)
         self.filter_logs_by_users(input_xmls,
@@ -28,19 +28,41 @@ class SvnFilter(object):
         parser.add_argument('-r', '--revision', help='revision info in similar format as svn log uses')
         return parser.parse_args(argv[1:])
 
+    def _get_xml_logs(self, parameters):
+        repositories = self._read_repository_urls(parameters.input_svn_repos)
+        return [SvnLogText.from_server(repository, parameters.revision) for repository in repositories]
+
+    def _read_repository_urls(self, fileobj):
+        repos = []
+        for line in fileobj:
+            if line.strip() and not line.strip().startswith('#'):
+                components = line.strip().split()
+                if len(components) == 1:
+                    repos.append(RepositoryUrl(components[0]))
+                else:
+                    repos.append(RepositoryUrl(components[0], components[1]))
+        return repos
+
     def get_logs_by_users(self, xml_logs, users):
         result_et, result_root = self._combine_logs_from_all_xmls_by_users(xml_logs, users)
         return self._sort_combined_tree_by_date(result_et, result_root)
 
     def _combine_logs_from_all_xmls_by_users(self, xml_logs, users):
-        source_roots = [ET.fromstring(xml_log) for xml_log in xml_logs]
+        source_roots = [ET.fromstring(xml_log.log_text) for xml_log in xml_logs]
         result_root = ET.Element('log')
         result_et = ET.ElementTree(element=result_root)
-        for root in source_roots:
+        for root, xml_log in zip(source_roots, xml_logs):
             for logentry in root.findall('logentry'):
                 if logentry.find('author').text in users:
+                    # TODO: Add prefixing repos
                     result_root.append(logentry)
         return result_et, result_root
+
+    def _prefix_paths(self, logentry, prefix):
+        if not prefix:
+            return
+        for path in logentry.find('paths'):
+            path.text = path.text.replace('y', 'Y')
 
     def _sort_combined_tree_by_date(self, result_et, result_root):
         logentries = result_root.getchildren()
@@ -62,32 +84,24 @@ class SvnFilter(object):
         return sorted(users)
 
 
-    def _get_xml_logs(self, parameters):
-        repositories = self._read_repository_urls(parameters.input_svn_repos)
-        svn_log_texts = []
-        svn_command = ['svn', 'log', '-v', '--xml']
-        if parameters.revision:
-            svn_command.extend(['-r', parameters.revision])
-        for repository in repositories:
-            svn_command_with_repo = list(svn_command)
-            svn_command_with_repo.append('{}'.format(repository.url))
-            svn_log_texts.append(subprocess.check_output(svn_command_with_repo))
-        return svn_log_texts
-
-    def _read_repository_urls(self, fileobj):
-        repos = []
-        for line in fileobj:
-            if line.strip() and not line.strip().startswith('#'):
-                components = line.strip().split()
-                if len(components) == 1:
-                    repos.append(RepositoryUrl(components[0]))
-                else:
-                    repos.append(RepositoryUrl(components[0], components[1]))
-        return repos
-
 
 class RepositoryUrl(object):
 
     def __init__(self, url, prefix=''):
         self.url = url
         self.prefix = prefix
+
+
+class SvnLogText(object):
+
+    def __init__(self, log_text, repository=None):
+        self.log_text = log_text
+        self.repository = repository
+
+    @classmethod
+    def from_server(cls, repository, revision):
+        svn_command = ['svn', 'log', '-v', '--xml']
+        if revision:
+            svn_command.extend(['-r', revision])
+        svn_command.append('{}'.format(repository.url))
+        return cls(subprocess.check_output(svn_command), repository)
