@@ -22,12 +22,10 @@ class SvnFilter(object):
         return result_et, result_root
 
     def _sort_combined_tree_by_date(self, result_et, result_root):
-        logentries = []
-        for logentry in result_root:
-            date = datetime.strptime(logentry.find('date').text, '%Y-%m-%dT%H:%M:%S.%fZ')
-            logentries.append((date, logentry))
-        logentries.sort()
-        result_root[:] = [logentry[-1] for logentry in logentries]
+        logentries = result_root.getchildren()
+        def get_datetime(logentry):
+            return datetime.strptime(logentry.find('date').text, '%Y-%m-%dT%H:%M:%S.%fZ')
+        result_root[:] = sorted(logentries, key=get_datetime)
         return result_et, result_root
 
     def filter_logs_by_users(self, xml_log, userlist_file, outfile):
