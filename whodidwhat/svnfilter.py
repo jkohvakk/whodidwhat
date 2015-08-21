@@ -8,6 +8,10 @@ from datetime import datetime
 class SvnFilter(object):
 
     def get_logs_by_users(self, xml_logs, users):
+        result_et, result_root = self._get_logs_from_all_xmls_by_users(xml_logs, users)
+        return self._sort_combined_tree_by_date(result_et, result_root)
+
+    def _get_logs_from_all_xmls_by_users(self, xml_logs, users):
         source_roots = [ET.fromstring(xml_log) for xml_log in xml_logs]
         result_root = ET.Element('log')
         result_et = ET.ElementTree(element=result_root)
@@ -15,7 +19,9 @@ class SvnFilter(object):
             for logentry in root.findall('logentry'):
                 if logentry.find('author').text in users:
                     result_root.append(logentry)
+        return result_et, result_root
 
+    def _sort_combined_tree_by_date(self, result_et, result_root):
         logentries = []
         for logentry in result_root:
             date = datetime.strptime(logentry.find('date').text, '%Y-%m-%dT%H:%M:%S.%fZ')
