@@ -2,13 +2,13 @@ import xml.etree.cElementTree as ET
 import sys
 import subprocess
 import argparse
+from datetime import datetime
 
 
 class SvnFilter(object):
 
     def get_logs_by_users(self, xml_logs, users):
         source_roots = [ET.fromstring(xml_log) for xml_log in xml_logs]
-        source_ets = [ET.ElementTree(element=root) for root in source_roots]
         result_root = ET.Element('log')
         result_et = ET.ElementTree(element=result_root)
         for root in source_roots:
@@ -18,7 +18,7 @@ class SvnFilter(object):
 
         logentries = []
         for logentry in result_root:
-            date = logentry.find('date').text
+            date = datetime.strptime(logentry.find('date').text, '%Y-%m-%dT%H:%M:%S.%fZ')
             logentries.append((date, logentry))
         logentries.sort()
         result_root[:] = [logentry[-1] for logentry in logentries]
