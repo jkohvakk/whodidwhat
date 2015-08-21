@@ -4,7 +4,7 @@ import StringIO
 import filecmp
 from whodidwhat.svnfilter import SvnFilter
 
-from mock import patch
+from mock import patch, call
 
 MODULE_DIR = os.path.dirname(__file__)
 
@@ -20,13 +20,13 @@ class TestFilterSvn(unittest.TestCase):
         self.log_filter = SvnFilter()
 
     def test_filtering_log_for_one_user(self):
-        _, entries = self.log_filter.get_logs_by_users(self.svn_xml_text, ['jkohvakk'])
+        _, entries = self.log_filter.get_logs_by_users([self.svn_xml_text], ['jkohvakk'])
         self.assertEqual(1, len(entries))
         self.assertEqual('213', entries[0].attrib['revision'])
         self.assertEqual('jkohvakk', entries[0].find('author').text)
 
     def test_filtering_log_for_two_users(self):
-        _, entries = self.log_filter.get_logs_by_users(self.svn_xml_text, ['kmikajar', 'jkohvakk'])
+        _, entries = self.log_filter.get_logs_by_users([self.svn_xml_text], ['kmikajar', 'jkohvakk'])
         self.assertEqual(2, len(entries))
         self.assertEqual('210', entries[0].attrib['revision'])
         self.assertEqual('kmikajar', entries[0].find('author').text)
@@ -60,9 +60,21 @@ basvodde
                                                      '--users-file', self.usersfile,
                                                      '--output-xml', self.output_xml,
                                                      '-r', '1234:HEAD'])
-        check_output_mock.assert_called_once_with(['svn', 'log', '-v', '--xml', '-r', '1234:HEAD',
-                                                   'https://svne1.access.nokiasiemensnetworks.com/isource/svnroot/ltetraining/python_intermediate/solutions'])
+        expected_check_output = [call(['svn', 'log', '-v', '--xml', '-r', '1234:HEAD',
+                                       'https://svn.com/isource/svnroot/training/python_intermediate/solutions']),
+                                 call(['svn', 'log', '-v', '--xml', '-r', '1234:HEAD',
+                                       'https://svn.com/isource/svnroot/training/tdd_in_c'])]
+        self.assertEqual(expected_check_output, check_output_mock.mock_calls)
 
+    def test_filtering_two_logs_for_one_user(self):
+        with open(os.path.join(MODULE_DIR, 'sample_data', 'another_sample_svn.xml')) as another_xml:
+            another_xml_text = another_xml.read()
+        _, entries = self.log_filter.get_logs_by_users([another_xml_text, self.svn_xml_text], ['kmikajar', 'jkohvakk'])
+        self.assertEqual(4, len(entries))
+        self.assertEqual('210', entries[0].attrib['revision'])
+        self.assertEqual('440', entries[1].attrib['revision'])
+        self.assertEqual('441', entries[2].attrib['revision'])
+        self.assertEqual('213', entries[3].attrib['revision'])
 
 
 if __name__ == "__main__":

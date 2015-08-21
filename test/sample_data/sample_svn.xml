@@ -10,11 +10,6 @@
    prop-mods="false"
    text-mods="true"
    kind="file">/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c</path>
-<path
-   text-mods="true"
-   kind="file"
-   action="M"
-   prop-mods="false">/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/AaSysTimercCreateImp_Test.cpp</path>
 </paths>
 <msg>provide a little help to get started</msg>
 </logentry>
@@ -28,41 +23,6 @@
    prop-mods="false"
    text-mods="true"
    kind="file">/tdd_in_c/dynamic_linker_seam/stub_sut.c</path>
-<path
-   prop-mods="false"
-   text-mods="true"
-   kind="file"
-   action="A">/tdd_in_c/dynamic_linker_seam/sut.c</path>
-<path
-   action="A"
-   prop-mods="false"
-   text-mods="true"
-   kind="file">/tdd_in_c/dynamic_linker_seam/Makefile</path>
-<path
-   action="A"
-   prop-mods="false"
-   text-mods="false"
-   kind="dir">/tdd_in_c/dynamic_linker_seam</path>
-<path
-   action="A"
-   prop-mods="false"
-   text-mods="true"
-   kind="file">/tdd_in_c/dynamic_linker_seam/sut.h</path>
-<path
-   prop-mods="false"
-   text-mods="true"
-   kind="file"
-   action="A">/tdd_in_c/dynamic_linker_seam/main.c</path>
-<path
-   action="A"
-   prop-mods="false"
-   text-mods="true"
-   kind="file">/tdd_in_c/dynamic_linker_seam/static.txt</path>
-<path
-   action="A"
-   prop-mods="false"
-   text-mods="true"
-   kind="file">/tdd_in_c/dynamic_linker_seam/symbols.txt</path>
 </paths>
 <msg>Example how to create a dynamic link seam by using objcreate
 </msg>
@@ -77,21 +37,6 @@
    prop-mods="false"
    text-mods="true"
    kind="file">/tdd_in_c/dynamic_linker_seam/sut.c</path>
-<path
-   action="M"
-   prop-mods="false"
-   text-mods="true"
-   kind="file">/tdd_in_c/dynamic_linker_seam/sut.h</path>
-<path
-   text-mods="true"
-   kind="file"
-   action="M"
-   prop-mods="false">/tdd_in_c/dynamic_linker_seam/main.c</path>
-<path
-   text-mods="true"
-   kind="file"
-   action="M"
-   prop-mods="false">/tdd_in_c/dynamic_linker_seam/stub_sut.c</path>
 </paths>
 <msg>Added output variable to example.
 </msg>
@@ -106,31 +51,6 @@
    prop-mods="false"
    text-mods="true"
    kind="file">/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py</path>
-<path
-   kind="dir"
-   action="A"
-   prop-mods="false"
-   text-mods="false">/python_intermediate/exercises/number_guessing_game/src</path>
-<path
-   action="M"
-   prop-mods="false"
-   text-mods="true"
-   kind="file">/python_intermediate/exercises/tti_trace/tst/test_tti_trace.py</path>
-<path
-   text-mods="false"
-   kind="dir"
-   action="A"
-   prop-mods="false">/python_intermediate/exercises/number_guessing_game/tst</path>
-<path
-   prop-mods="true"
-   text-mods="true"
-   kind="file"
-   action="A">/python_intermediate/exercises/number_guessing_game/number_guessing_game.pptx</path>
-<path
-   prop-mods="false"
-   text-mods="false"
-   kind="dir"
-   action="A">/python_intermediate/exercises/number_guessing_game</path>
 </paths>
 <msg>Added starting point of number guessing game exercise</msg>
 </logentry>

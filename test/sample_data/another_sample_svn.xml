@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<log>
+<logentry
+   revision="440">
+<author>kmikajar</author>
+<date>2015-04-16T07:34:24.468402Z</date>
+<paths>
+<path
+   action="M"
+   prop-mods="false"
+   text-mods="true"
+   kind="file">/foo/bar/include/header.h</path>
+</paths>
+<msg>Added include guards</msg>
+</logentry>
+<logentry
+   revision="441">
+<author>jkohvakk</author>
+<date>2015-04-18T07:44:00.811406Z</date>
+<paths>
+<path
+   action="A"
+   prop-mods="false"
+   text-mods="true"
+   kind="file">/foo/daa/src/game.cpp</path>
+</paths>
+<msg>Added file for the game
+</msg>
+</logentry>
+</log>

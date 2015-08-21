@@ -1,11 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<log>
-<logentry revision="210">
+<log><logentry revision="210">
 <author>kmikajar</author>
 <date>2015-04-16T07:32:24.468402Z</date>
 <paths>
 <path action="M" kind="file" prop-mods="false" text-mods="true">/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c</path>
-<path action="M" kind="file" prop-mods="false" text-mods="true">/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/AaSysTimercCreateImp_Test.cpp</path>
 </paths>
 <msg>provide a little help to get started</msg>
 </logentry>
@@ -14,11 +12,6 @@
 <date>2015-05-14T07:58:14.727598Z</date>
 <paths>
 <path action="A" kind="file" prop-mods="false" text-mods="true">/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py</path>
-<path action="A" kind="dir" prop-mods="false" text-mods="false">/python_intermediate/exercises/number_guessing_game/src</path>
-<path action="M" kind="file" prop-mods="false" text-mods="true">/python_intermediate/exercises/tti_trace/tst/test_tti_trace.py</path>
-<path action="A" kind="dir" prop-mods="false" text-mods="false">/python_intermediate/exercises/number_guessing_game/tst</path>
-<path action="A" kind="file" prop-mods="true" text-mods="true">/python_intermediate/exercises/number_guessing_game/number_guessing_game.pptx</path>
-<path action="A" kind="dir" prop-mods="false" text-mods="false">/python_intermediate/exercises/number_guessing_game</path>
 </paths>
 <msg>Added starting point of number guessing game exercise</msg>
 </logentry>

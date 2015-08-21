@@ -6,13 +6,23 @@ import argparse
 
 class SvnFilter(object):
 
-    def get_logs_by_users(self, xml_log, users):
-        root = ET.fromstring(xml_log)
-        et = ET.ElementTree(element=root)
-        for logentry in root.findall('logentry'):
-            if logentry.find('author').text not in users:
-                root.remove(logentry)
-        return et, root
+    def get_logs_by_users(self, xml_logs, users):
+        source_roots = [ET.fromstring(xml_log) for xml_log in xml_logs]
+        source_ets = [ET.ElementTree(element=root) for root in source_roots]
+        result_root = ET.Element('log')
+        result_et = ET.ElementTree(element=result_root)
+        for root in source_roots:
+            for logentry in root.findall('logentry'):
+                if logentry.find('author').text in users:
+                    result_root.append(logentry)
+
+        logentries = []
+        for logentry in result_root:
+            date = logentry.find('date').text
+            logentries.append((date, logentry))
+        logentries.sort()
+        result_root[:] = [logentry[-1] for logentry in logentries]
+        return result_et, result_root
 
     def filter_logs_by_users(self, xml_log, userlist_file, outfile):
         userlist = self.read_userlist(userlist_file)
@@ -31,12 +41,15 @@ class SvnFilter(object):
 
     def parse_parameters_and_filter(self, argv=None):
         parameters = self.parse_parameters(argv)
-        input_xml = parameters.input_xml.read() if parameters.input_xml else self._get_xml_log(parameters)[0]
-        self.filter_logs_by_users(input_xml,
+        if parameters.input_xml:
+            input_xmls = [parameters.input_xml.read()]
+        else:
+            input_xmls = self._get_xml_logs(parameters)
+        self.filter_logs_by_users(input_xmls,
                                   parameters.users_file,
                                   parameters.output_xml)
 
-    def _get_xml_log(self, parameters):
+    def _get_xml_logs(self, parameters):
         repositories = self._read_line_based_data(parameters.input_svn_repos)
         svn_log_texts = []
         svn_command = ['svn', 'log', '-v', '--xml']
