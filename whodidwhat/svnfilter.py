@@ -64,12 +64,6 @@ class SvnFilter(object):
                         if xml_log.repository:
                             path.text = os.path.join('/', xml_log.repository.prefix, path.text[1:])
 
-    def _prefix_paths(self, logentry, prefix):
-        if not prefix:
-            return
-        for path in logentry.find('paths'):
-            path.text = path.text.replace('y', 'Y')
-
     def _sort_combined_tree_by_date(self, result_et, result_root):
         logentries = result_root.getchildren()
         def get_datetime(logentry):
