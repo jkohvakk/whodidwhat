@@ -79,11 +79,9 @@ basvodde
         self.assertEqual('441', entries[2].attrib['revision'])
         self.assertEqual('213', entries[3].attrib['revision'])
 
-    @unittest.SkipTest
     def test_prefixing_urls(self):
         repo = RepositoryUrl('https://svn.com', 'foo/bar')
-        tree, entries = self.log_filter.get_logs_by_users([SvnLogText(self.svn_xml_text)], ['jkohvakk'])
-        #ET.dump(tree)
+        _, entries = self.log_filter.get_logs_by_users([SvnLogText(self.svn_xml_text, repo)], ['jkohvakk'])
         self.assertEqual('/foo/bar/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py',
                          entries[0].find('paths')[0].text)
 

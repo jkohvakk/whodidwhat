@@ -1,5 +1,6 @@
 import xml.etree.cElementTree as ET
 import sys
+import os
 import subprocess
 import argparse
 from datetime import datetime
@@ -54,7 +55,9 @@ class SvnFilter(object):
         for root, xml_log in zip(source_roots, xml_logs):
             for logentry in root.findall('logentry'):
                 if logentry.find('author').text in users:
-                    # TODO: Add prefixing repos
+                    for path in logentry.find('paths'):
+                        if xml_log.repository:
+                            path.text = os.path.join('/', xml_log.repository.prefix, path.text[1:])
                     result_root.append(logentry)
         return result_et, result_root
 
