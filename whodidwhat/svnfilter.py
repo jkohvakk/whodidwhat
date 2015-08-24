@@ -55,11 +55,14 @@ class SvnFilter(object):
         for root, xml_log in zip(source_roots, xml_logs):
             for logentry in root.findall('logentry'):
                 if logentry.find('author').text in users:
+                    self._prefix_paths_by_url_prefix(logentry, xml_log)
+                    result_root.append(logentry)
+        return result_et, result_root
+
+    def _prefix_paths_by_url_prefix(self, logentry, xml_log):
                     for path in logentry.find('paths'):
                         if xml_log.repository:
                             path.text = os.path.join('/', xml_log.repository.prefix, path.text[1:])
-                    result_root.append(logentry)
-        return result_et, result_root
 
     def _prefix_paths(self, logentry, prefix):
         if not prefix:
