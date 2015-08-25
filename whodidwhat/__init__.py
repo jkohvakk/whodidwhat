@@ -1,5 +1,5 @@
-
 from svnfilter import SvnFilter
+
 
 def whodidwhat():
     svnfilter = SvnFilter()

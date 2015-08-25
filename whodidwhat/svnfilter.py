@@ -60,12 +60,13 @@ class SvnFilter(object):
         return result_et, result_root
 
     def _prefix_paths_by_url_prefix(self, logentry, xml_log):
-                    for path in logentry.find('paths'):
-                        if xml_log.repository:
-                            path.text = os.path.join('/', xml_log.repository.prefix, path.text[1:])
+        for path in logentry.find('paths'):
+            if xml_log.repository:
+                path.text = os.path.join('/', xml_log.repository.prefix, path.text[1:])
 
     def _sort_combined_tree_by_date(self, result_et, result_root):
         logentries = result_root.getchildren()
+
         def get_datetime(logentry):
             return datetime.strptime(logentry.find('date').text, '%Y-%m-%dT%H:%M:%S.%fZ')
         result_root = sorted(logentries, key=get_datetime)
@@ -82,7 +83,6 @@ class SvnFilter(object):
             if line.strip() and not line.strip().startswith('#'):
                 users.append(line.strip())
         return sorted(users)
-
 
 
 class RepositoryUrl(object):
