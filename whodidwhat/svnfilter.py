@@ -69,7 +69,7 @@ class SvnFilter(object):
 
         def get_datetime(logentry):
             return datetime.strptime(logentry.find('date').text, '%Y-%m-%dT%H:%M:%S.%fZ')
-        result_root = sorted(logentries, key=get_datetime)
+        result_root[:] = sorted(logentries, key=get_datetime)
         return result_et, result_root
 
     def filter_logs_by_users(self, xml_log, userlist_file, outfile):
