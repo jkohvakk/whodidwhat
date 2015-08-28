@@ -44,6 +44,18 @@ class SvnFilter(object):
                     repos.append(RepositoryUrl(components[0], components[1]))
         return repos
 
+    def filter_logs_by_users(self, xml_log, userlist_file, outfile):
+        userlist = self.read_userlist(userlist_file)
+        filtered_et, _ = self.get_logs_by_users(xml_log, userlist)
+        filtered_et.write(outfile, encoding='UTF-8', xml_declaration=True)
+
+    def read_userlist(self, userlist_file):
+        users = []
+        for line in userlist_file:
+            if line.strip() and not line.strip().startswith('#'):
+                users.append(line.strip())
+        return sorted(users)
+
     def get_logs_by_users(self, xml_logs, users):
         result_et, result_root = self._combine_logs_from_all_xmls_by_users(xml_logs, users)
         return self._sort_combined_tree_by_date(result_et, result_root)
@@ -71,18 +83,6 @@ class SvnFilter(object):
             return datetime.strptime(logentry.find('date').text, '%Y-%m-%dT%H:%M:%S.%fZ')
         result_root[:] = sorted(logentries, key=get_datetime)
         return result_et, result_root
-
-    def filter_logs_by_users(self, xml_log, userlist_file, outfile):
-        userlist = self.read_userlist(userlist_file)
-        filtered_et, _ = self.get_logs_by_users(xml_log, userlist)
-        filtered_et.write(outfile, encoding='UTF-8', xml_declaration=True)
-
-    def read_userlist(self, userlist_file):
-        users = []
-        for line in userlist_file:
-            if line.strip() and not line.strip().startswith('#'):
-                users.append(line.strip())
-        return sorted(users)
 
 
 class RepositoryUrl(object):

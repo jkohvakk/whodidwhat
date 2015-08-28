@@ -17,6 +17,7 @@ def get_common_paths():
         for path in sorted(common_paths):
             outfile.write(path + '\n')
 
+
 def get_path_with_level(path, level):
     parts = [path]
     components = []
@@ -24,6 +25,7 @@ def get_path_with_level(path, level):
         parts = os.path.split(parts[0])
         components.insert(0, parts[1])
     return os.path.join(*components[:level])
+
 
 def parse_parameters(argv=None):
     argv = argv if argv is not None else sys.argv
