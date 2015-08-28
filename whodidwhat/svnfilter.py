@@ -11,12 +11,56 @@ class SvnFilter(object):
     def parse_parameters_and_filter(self, argv=None):
         parameters = self.parse_parameters(argv)
         if parameters.input_xml:
-            input_xmls = [SvnLogText(parameters.input_xml.read())]
+            self._input_xmls = [SvnLogText(parameters.input_xml.read())]
         else:
-            input_xmls = self._get_xml_logs(parameters)
-        self.filter_logs_by_users(input_xmls,
+            self._input_xmls = self._get_xml_logs(parameters)
+        filtered_element_tree = self.filter_logs_by_users(self._input_xmls,
                                   parameters.users_file,
                                   parameters.output_xml)
+        if parameters.blame_folder:
+            self.blame_top_active_files(parameters.blame_folder,
+                                        parameters.blame_limit,
+                                        filtered_element_tree)
+
+    def blame_top_active_files(self, blame_folder, blame_limit, filtered_et):
+        top_files = self.find_top_active_files(filtered_et, blame_limit)
+        for filename in top_files:
+            server_name = self.get_server_name(filename, self._input_xmls)
+            blame_log = subprocess.check_output(['svn', 'blame', server_name])
+            basename = os.path.split(server_name)[-1]
+            with open(os.path.join(blame_folder, basename), 'w') as blamefile:
+                blamefile.write(self.blame_only_given_users(blame_log))
+
+    def get_server_name(self, filename, svnlogtexts):
+        for svnlogtext in svnlogtexts:
+            if svnlogtext.repository.prefix in filename:
+                filename = filename.replace(svnlogtext.repository.prefix, '')
+                filename = filename.lstrip(os.path.sep)
+                return os.path.join(svnlogtext.repository.url, filename)
+
+    def find_top_active_files(self, et, blame_limit):
+        root = et.getroot()
+        file_counts = {}
+        for logentry in root.findall('logentry'):
+            for path in logentry.find('paths'):
+                if path.text not in file_counts:
+                    file_counts[path.text] = 1
+                else:
+                    file_counts[path.text] += 1
+        return sorted(file_counts, key=file_counts.get, reverse=True)[:blame_limit]
+
+    def blame_only_given_users(self, blame_log):
+        blame_only_given = ''
+        for line in blame_log.splitlines(True):
+            username = line.split()[1]
+            if username in self._userlist:
+                blame_only_given += line
+            else:
+                blame_only_given += self._remove_username(line, username)
+        return blame_only_given
+
+    def _remove_username(self, line, username):
+        return line.replace(username, ' '*len(username), 1)
 
     def parse_parameters(self, argv):
         argv = argv if argv is not None else sys.argv
@@ -26,6 +70,8 @@ class SvnFilter(object):
         parser.add_argument('--users-file', help='file of usernames given line-by-line', type=argparse.FileType('r'))
         parser.add_argument('--input-svn-repos', help='file of svn repository paths given line-by-line', type=file)
         parser.add_argument('--output-xml', help='path for writing filtered xml')
+        parser.add_argument('--blame-folder', help='folder to store blames of top committed files')
+        parser.add_argument('--blame-limit', help='how many of the top committed files should be blamed', type=int)
         parser.add_argument('-r', '--revision', help='revision info in similar format as svn log uses')
         return parser.parse_args(argv[1:])
 
@@ -45,9 +91,11 @@ class SvnFilter(object):
         return repos
 
     def filter_logs_by_users(self, xml_log, userlist_file, outfile):
-        userlist = self.read_userlist(userlist_file)
-        filtered_et, _ = self.get_logs_by_users(xml_log, userlist)
-        filtered_et.write(outfile, encoding='UTF-8', xml_declaration=True)
+        self._userlist = self.read_userlist(userlist_file)
+        filtered_et, _ = self.get_logs_by_users(xml_log, self._userlist)
+        if outfile is not None:
+            filtered_et.write(outfile, encoding='UTF-8', xml_declaration=True)
+        return filtered_et
 
     def read_userlist(self, userlist_file):
         users = []
@@ -105,3 +153,5 @@ class SvnLogText(object):
             svn_command.extend(['-r', revision])
         svn_command.append('{}'.format(repository.url))
         return cls(subprocess.check_output(svn_command), repository)
+
+

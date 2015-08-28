@@ -22,7 +22,7 @@
    action="A"
    prop-mods="false"
    text-mods="true"
-   kind="file">/tdd_in_c/dynamic_linker_seam/stub_sut.c</path>
+   kind="file">/tdd_in_c/dynamic_linker_seam/sut.c</path>
 </paths>
 <msg>Example how to create a dynamic link seam by using objcreate
 </msg>
