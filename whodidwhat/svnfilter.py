@@ -23,13 +23,25 @@ class SvnFilter(object):
                                         filtered_element_tree)
 
     def blame_top_active_files(self, blame_folder, blame_limit, filtered_et):
+        blame_limit = blame_limit if blame_limit is not None else -1
         top_files = self.find_top_active_files(filtered_et, blame_limit)
+        print('------- BLAMING -------')
+        blamed_lines_per_file = {}
         for filename in top_files:
             server_name = self.get_server_name(filename, self._input_xmls)
-            blame_log = subprocess.check_output(['svn', 'blame', server_name])
+            try:
+                blame_log = subprocess.check_output(['svn', 'blame', server_name])
+            except subprocess.CalledProcessError as e:
+                if e.returncode == 1 and 'path not found' in e.output:
+                    continue
             basename = os.path.split(server_name)[-1]
             with open(os.path.join(blame_folder, basename), 'w') as blamefile:
-                blamefile.write(self.blame_only_given_users(blame_log))
+                team_blame, blamed_lines = self.blame_only_given_users(blame_log)
+                blamed_lines_per_file[filename] = blamed_lines
+                blamefile.write(team_blame)
+        print('Top changed lines:')
+        for blamefile in sorted(blamed_lines_per_file, key=blamed_lines_per_file.get, reverse=True):
+            print('{}: {}'.format(blamefile, blamed_lines_per_file[blamefile]))
 
     def get_server_name(self, filename, svnlogtexts):
         for svnlogtext in svnlogtexts:
@@ -47,17 +59,21 @@ class SvnFilter(object):
                     file_counts[path.text] = 1
                 else:
                     file_counts[path.text] += 1
+        for f in sorted(file_counts, key=file_counts.get, reverse=True):
+            print('{}: {}'.format(f, file_counts[f]))
         return sorted(file_counts, key=file_counts.get, reverse=True)[:blame_limit]
 
     def blame_only_given_users(self, blame_log):
         blame_only_given = ''
+        blamed_lines = 0
         for line in blame_log.splitlines(True):
             username = line.split()[1]
             if username in self._userlist:
                 blame_only_given += line
+                blamed_lines += 1
             else:
                 blame_only_given += self._remove_username(line, username)
-        return blame_only_given
+        return blame_only_given, blamed_lines
 
     def _remove_username(self, line, username):
         return line.replace(username, ' '*len(username), 1)

@@ -145,8 +145,10 @@ basvodde
 
         self.log_filter._userlist = ['jkohvakk', 'kmikajar']
         self.assertEqual(expected_blame_only,
-                         self.log_filter.blame_only_given_users(raw_blame_text))
-    
+                         self.log_filter.blame_only_given_users(raw_blame_text)[0])
+        self.assertEqual(6,
+                         self.log_filter.blame_only_given_users(raw_blame_text)[1])
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
