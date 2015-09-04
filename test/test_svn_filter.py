@@ -5,7 +5,7 @@ import filecmp
 import xml.etree.cElementTree as ET
 from whodidwhat.svnfilter import SvnFilter, SvnLogText, RepositoryUrl
 
-from mock import patch, call
+from mock import patch, call, Mock
 
 MODULE_DIR = os.path.dirname(__file__)
 
@@ -67,6 +67,14 @@ basvodde
                                        'https://svn.com/isource/svnroot/training/tdd_in_c'])]
         self.assertEqual(expected_check_output, check_output_mock.mock_calls)
 
+    @patch('whodidwhat.svnfilter.SvnFilter.read_userlist')
+    @patch('whodidwhat.svnfilter.SvnFilter.get_logs_by_users')
+    def test_if_output_xml_is_not_given_writing_is_skipped(self, get_logs_by_users_mock, read_userlist_mock):
+        et_mock = Mock()
+        get_logs_by_users_mock.return_value = (et_mock, Mock())
+        self.log_filter.filter_logs_by_users('xml_log', 'userlist_file', None)
+        self.assertEqual([], et_mock.write.mock_calls)
+
     def test_filtering_two_logs_for_one_user(self):
         with open(os.path.join(MODULE_DIR, 'sample_data', 'another_sample_svn.xml')) as another_xml:
             another_xml_text = another_xml.read()
@@ -104,11 +112,12 @@ basvodde
         self.assertEqual(expected_check_output, check_output_mock.mock_calls)
 
     def test_find_top_active_files(self):
+        self.log_filter._statistics_file = Mock()
         tree, _ = self.log_filter.get_logs_by_users([SvnLogText(self.svn_xml_text)], ['kmikajar', 'jkohvakk', 'dems1e72'])
         self.assertEqual(['/tdd_in_c/dynamic_linker_seam/sut.c',
                           '/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py',
                           '/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c'],
-                         self.log_filter.find_top_active_files(tree, 100))
+                         self.log_filter.find_top_active_files(tree))
 
     def test_get_server_name(self):
         log_texts = [SvnLogText('', RepositoryUrl('https://svn.com/foo/bar', 'foobar')),
