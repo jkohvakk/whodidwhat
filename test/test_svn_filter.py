@@ -2,10 +2,11 @@ import unittest
 import os
 import StringIO
 import filecmp
+import subprocess
 import xml.etree.cElementTree as ET
 from whodidwhat.svnfilter import SvnFilter, SvnLogText, RepositoryUrl
 
-from mock import patch, call, Mock
+from mock import patch, call, Mock, mock_open
 
 MODULE_DIR = os.path.dirname(__file__)
 
@@ -111,13 +112,74 @@ basvodde
         expected_check_output.append(call(['svn', 'blame', 'https://svn.com/isource/svnroot/training/tdd_in_c/tdd_in_c/dynamic_linker_seam/sut.c']))
         self.assertEqual(expected_check_output, check_output_mock.mock_calls)
 
-    def test_find_top_active_files(self):
+    def test_find_active_files(self):
         self.log_filter._statistics_file = Mock()
         tree, _ = self.log_filter.get_logs_by_users([SvnLogText(self.svn_xml_text)], ['kmikajar', 'jkohvakk', 'dems1e72'])
         self.assertEqual(['/tdd_in_c/dynamic_linker_seam/sut.c',
                           '/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py',
                           '/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c'],
-                         self.log_filter.find_top_active_files(tree))
+                         self.log_filter.find_active_files(tree))
+        expected_statistics_calls = [call.write('Top commit counts:\n'),
+                                     call.write('/tdd_in_c/dynamic_linker_seam/sut.c: 2\n'),
+                                     call.write('/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py: 1\n'),
+                                     call.write('/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c: 1\n')]
+        self.assertEqual(expected_statistics_calls, self.log_filter._statistics_file.mock_calls)
+
+    SMALLEST_XML = '''\
+<?xml version="1.0" encoding="UTF-8"?>
+<log>
+<logentry
+   revision="213">
+<author>jkohvakk</author>
+<date>2015-05-14T07:58:14.727598Z</date>
+<paths>
+<path
+   action="A"
+   prop-mods="false"
+   text-mods="true"
+   kind="file">/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py</path>
+</paths>
+<msg>Added starting point of number guessing game exercise</msg>
+</logentry>
+</log>'''
+
+    @patch('whodidwhat.svnfilter.SvnFilter.blame_only_given_users')
+    @patch('whodidwhat.svnfilter.subprocess.check_output')
+    @patch('__builtin__.open', new_callable=mock_open)
+    def test_blame_active_files_happy_path(self, open_mock, check_output_mock, blame_only_given_users_mock):
+        self.log_filter._statistics_file = Mock()
+        blame_only_given_users_mock.return_value = ('This is blame of 1 line', 1)
+        xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
+        self.log_filter._input_xmls = xml_log_text
+        self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
+        tree, _ = self.log_filter.get_logs_by_users(xml_log_text,
+                                                    ['kmikajar', 'jkohvakk', 'dems1e72'])
+        check_output_mock.return_value = self.RAW_BLAME_TEXT
+
+        self.log_filter.blame_active_files('blame', tree)
+
+        check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
+        open_mock().write.assert_called_with('This is blame of 1 line')
+
+    @patch('whodidwhat.svnfilter.SvnFilter.blame_only_given_users')
+    @patch('whodidwhat.svnfilter.subprocess.check_output')
+    @patch('__builtin__.open', new_callable=mock_open)
+    def test_blame_active_files_no_blame_written_if_file_deleted_from_svn(self, open_mock, check_output_mock, blame_only_given_users_mock):
+        self.log_filter._statistics_file = Mock()
+        blame_only_given_users_mock.return_value = ('This is blame of 1 line', 1)
+        check_output_mock.side_effect = subprocess.CalledProcessError(1, 'Path not found')
+        xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
+        self.log_filter._input_xmls = xml_log_text
+        self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
+        tree, _ = self.log_filter.get_logs_by_users(xml_log_text,
+                                                    ['kmikajar', 'jkohvakk', 'dems1e72'])
+        check_output_mock.return_value = self.RAW_BLAME_TEXT
+
+        self.log_filter.blame_active_files('blame', tree)
+
+        check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
+        self.assertEqual([], open_mock().write.mock_calls)
+
 
     def test_get_server_name(self):
         log_texts = [SvnLogText('', RepositoryUrl('https://svn.com/foo/bar', 'foobar')),
@@ -125,8 +187,7 @@ basvodde
         self.assertEqual('https://googlecode.com/statsvn/stats.cpp',
                          self.log_filter.get_server_name('/statsvn/stats.cpp', log_texts))
 
-    def test_blame_only_given_users(self):
-        raw_blame_text = '''\
+    RAW_BLAME_TEXT = '''\
 308498   jawinter class RammbockCore(object):
 308499   jkohvakk 
 308499   jkohvakk     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
@@ -139,7 +200,7 @@ basvodde
 308498   jawinter         self._protocols = {}
 365453   jawinter         self._servers = _NamedCache('server', "No servers defined!")'''
 
-        expected_blame_only = '''\
+    EXPECTED_BLAME_ONLY = '''\
 308498            class RammbockCore(object):
 308499   jkohvakk 
 308499   jkohvakk     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
@@ -152,12 +213,15 @@ basvodde
 308498                    self._protocols = {}
 365453                    self._servers = _NamedCache('server', "No servers defined!")'''
 
+    def test_blame_only_given_users(self):
+
         self.log_filter._userlist = ['jkohvakk', 'kmikajar']
-        self.assertEqual(expected_blame_only,
-                         self.log_filter.blame_only_given_users(raw_blame_text)[0])
+        self.assertEqual(self.EXPECTED_BLAME_ONLY,
+                         self.log_filter.blame_only_given_users(self.RAW_BLAME_TEXT)[0])
         self.assertEqual(6,
-                         self.log_filter.blame_only_given_users(raw_blame_text)[1])
+                         self.log_filter.blame_only_given_users(self.RAW_BLAME_TEXT)[1])
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
+    

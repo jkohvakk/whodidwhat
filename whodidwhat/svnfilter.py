@@ -22,20 +22,18 @@ class SvnFilter(object):
                                   parameters.users_file,
                                   parameters.output_xml)
         if parameters.blame_folder:
-            self.blame_top_active_files(parameters.blame_folder,
+            self.blame_active_files(parameters.blame_folder,
                                         filtered_element_tree)
 
-    def blame_top_active_files(self, blame_folder, filtered_et):
-        top_files = self.find_top_active_files(filtered_et)
-        print('------- BLAMING -------')
+    def blame_active_files(self, blame_folder, filtered_et):
+        active_files = self.find_active_files(filtered_et)
         blamed_lines_per_file = {}
-        for filename in top_files:
+        for filename in active_files:
             server_name = self.get_server_name(filename, self._input_xmls)
             try:
                 blame_log = subprocess.check_output(['svn', 'blame', server_name])
-            except subprocess.CalledProcessError as e:
-                if e.returncode == 1 and 'path not found' in e.output:
-                    continue
+            except subprocess.CalledProcessError:
+                continue
             basename = os.path.split(server_name)[-1]
             with open(os.path.join(blame_folder, basename), 'w') as blamefile:
                 team_blame, blamed_lines = self.blame_only_given_users(blame_log)
@@ -47,12 +45,12 @@ class SvnFilter(object):
 
     def get_server_name(self, filename, svnlogtexts):
         for svnlogtext in svnlogtexts:
-            if svnlogtext.repository.prefix in filename:
+            if svnlogtext.repository and svnlogtext.repository.prefix in filename:
                 filename = filename.replace(svnlogtext.repository.prefix, '')
                 filename = filename.lstrip(os.path.sep)
                 return os.path.join(svnlogtext.repository.url, filename)
 
-    def find_top_active_files(self, et):
+    def find_active_files(self, et):
         root = et.getroot()
         file_counts = {}
         for logentry in root.findall('logentry'):
