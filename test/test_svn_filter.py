@@ -4,7 +4,7 @@ import StringIO
 import filecmp
 import subprocess
 import xml.etree.cElementTree as ET
-from whodidwhat.svnfilter import SvnFilter, SvnLogText, RepositoryUrl
+from whodidwhat.svnfilter import SvnFilter, SvnLogText, RepositoryUrl, Statistics
 
 from mock import patch, call, Mock, mock_open
 
@@ -115,12 +115,14 @@ basvodde
         self.assertEqual(expected_check_output, check_output_mock.mock_calls)
 
     def test_find_active_files(self):
-        self.log_filter._statistics_file = Mock()
         tree, _ = self.log_filter.get_logs_by_users([SvnLogText(self.svn_xml_text)], ['kmikajar', 'jkohvakk', 'dems1e72'])
         self.assertEqual(['/tdd_in_c/dynamic_linker_seam/sut.c',
                           '/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py',
                           '/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c'],
                          self.log_filter.find_active_files(tree))
+        self.assertEqual(1, self.log_filter._statistics.get_commit_counts_by_users()['kmikajar'])
+        self.assertEqual(2, self.log_filter._statistics.get_commit_counts_by_users()['dems1e72'])
+        self.assertEqual(1, self.log_filter._statistics.get_commit_counts_by_users()['jkohvakk'])
 
     SMALLEST_XML = '''\
 <?xml version="1.0" encoding="UTF-8"?>
@@ -143,7 +145,6 @@ basvodde
     @patch('whodidwhat.svnfilter.subprocess.check_output')
     @patch('__builtin__.open', new_callable=mock_open)
     def test_blame_active_files_happy_path(self, open_mock, check_output_mock):
-        self.log_filter._statistics_file = Mock()
         xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
         self.log_filter._input_xmls = xml_log_text
         self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
@@ -155,14 +156,13 @@ basvodde
 
         check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         open_mock().write.assert_called_with(self.EXPECTED_BLAME_ONLY)
-        self.assertEqual(self.log_filter._statistics.get_changed_lines_by_team(),
+        self.assertEqual(self.log_filter._statistics.get_changed_lines_by_files_text(),
                          'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py: 6\n')
 
     @patch('whodidwhat.svnfilter.SvnFilter.blame_only_given_users')
     @patch('whodidwhat.svnfilter.subprocess.check_output')
     @patch('__builtin__.open', new_callable=mock_open)
     def test_blame_active_files_no_blame_written_if_file_deleted_from_svn(self, open_mock, check_output_mock, blame_only_given_users_mock):
-        self.log_filter._statistics_file = Mock()
         blame_only_given_users_mock.return_value = ('This is blame of 1 line', 1)
         check_output_mock.side_effect = subprocess.CalledProcessError(1, 'Path not found')
         xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
@@ -214,6 +214,44 @@ basvodde
         self.log_filter._userlist = ['jkohvakk', 'kmikajar']
         self.assertEqual(self.EXPECTED_BLAME_ONLY,
                          self.log_filter.blame_only_given_users(self.RAW_BLAME_TEXT, 'dummy_server_name'))
+        self.assertEqual(3, self.log_filter._statistics.get_changed_lines_by_users()['jkohvakk'])
+        self.assertEqual(3, self.log_filter._statistics.get_changed_lines_by_users()['kmikajar'])
+
+
+class TestStatistics(unittest.TestCase):
+
+    def setUp(self):
+        self.statistics = Statistics() 
+        self.statistics.add_changed_line('file1', 'jkohvakk')
+        self.statistics.add_changed_line('file2', 'jkohvakk')
+        self.statistics.add_changed_line('file2', 'kmikajar')
+        self.statistics.add_commit_count('file1', 'jkohvakk')
+        self.statistics.add_commit_count('file2', 'jkohvakk')
+        self.statistics.add_commit_count('file2', 'kmikajar')
+
+    def test_changed_lines_by_files_text(self):
+        self.assertEqual('''\
+file2: 2
+file1: 1
+''', self.statistics.get_changed_lines_by_files_text())
+
+    def test_changed_lines_by_users_text(self):
+        self.assertEqual('''\
+jkohvakk: 2
+kmikajar: 1
+''', self.statistics.get_changed_lines_by_users_text())
+
+    def test_commit_counts_by_files_text(self):
+        self.assertEqual('''\
+file2: 2
+file1: 1
+''', self.statistics.get_commit_counts_by_files_text())
+
+    def test_commit_counts_by_users_text(self):
+        self.assertEqual('''\
+jkohvakk: 2
+kmikajar: 1
+''', self.statistics.get_commit_counts_by_users_text())
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
