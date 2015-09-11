@@ -29,7 +29,7 @@ class SvnFilter(object):
     def write_statistics(self, statistics_filename):
         statistics_txt = 'Top changed lines by user\n'
         statistics_txt += self._statistics.get_changed_lines_by_users_text()
-        statistics_txt = 'Top commit counts by user\n'
+        statistics_txt += 'Top commit counts by user\n'
         statistics_txt += self._statistics.get_commit_counts_by_users_text()
         statistics_txt += 'Top changed lines:\n'
         statistics_txt += self._statistics.get_changed_lines_by_files_text()
