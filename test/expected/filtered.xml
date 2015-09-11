@@ -3,6 +3,14 @@
 <author>kmikajar</author>
 <date>2015-04-16T07:32:24.468402Z</date>
 <paths>
+<path action="M" kind="file" prop-mods="false" text-mods="true">/python/intermediate/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c</path>
+</paths>
+<msg>provide a little help to get started</msg>
+</logentry>
+<logentry revision="210">
+<author>kmikajar</author>
+<date>2015-04-16T07:32:24.468402Z</date>
+<paths>
 <path action="M" kind="file" prop-mods="false" text-mods="true">/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c</path>
 </paths>
 <msg>provide a little help to get started</msg>
@@ -11,7 +19,17 @@
 <author>jkohvakk</author>
 <date>2015-05-14T07:58:14.727598Z</date>
 <paths>
+<path action="A" kind="file" prop-mods="false" text-mods="true">/python/intermediate/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py</path>
+<path action="A" kind="file" prop-mods="false" text-mods="true">/python/intermediate/python_intermediate/exercises/number_guessing_game/src/number_guessing_game.py</path>
+</paths>
+<msg>Added starting point of number guessing game exercise</msg>
+</logentry>
+<logentry revision="213">
+<author>jkohvakk</author>
+<date>2015-05-14T07:58:14.727598Z</date>
+<paths>
 <path action="A" kind="file" prop-mods="false" text-mods="true">/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py</path>
+<path action="A" kind="file" prop-mods="false" text-mods="true">/python_intermediate/exercises/number_guessing_game/src/number_guessing_game.py</path>
 </paths>
 <msg>Added starting point of number guessing game exercise</msg>
 </logentry>

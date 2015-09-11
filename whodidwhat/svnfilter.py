@@ -65,8 +65,9 @@ class SvnFilter(object):
         root = et.getroot()
         for logentry in root.findall('logentry'):
             author = logentry.find('author').text
+            self._statistics.add_commit_count(author)
             for path in logentry.find('paths'):
-                self._statistics.add_commit_count(path.text, author)
+                self._statistics.add_commit_count_of_file(path.text)
         return self._statistics.get_committed_files()
 
     def blame_only_given_users(self, blame_log, server_name):
@@ -187,9 +188,11 @@ class Statistics(object):
         self._blamed_lines_by_file[server_name] += 1
         self._blamed_lines_by_user[author] += 1
 
-    def add_commit_count(self, filename, author):
-        self._commit_counts_by_file[filename] += 1
+    def add_commit_count(self, author):
         self._commit_counts_by_user[author] += 1
+
+    def add_commit_count_of_file(self, filename):
+        self._commit_counts_by_file[filename] += 1
 
     def get_changed_lines_by_files_text(self):
         return self._to_text(self._blamed_lines_by_file)

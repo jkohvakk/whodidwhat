@@ -51,6 +51,11 @@
    prop-mods="false"
    text-mods="true"
    kind="file">/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py</path>
+<path
+   action="A"
+   prop-mods="false"
+   text-mods="true"
+   kind="file">/python_intermediate/exercises/number_guessing_game/src/number_guessing_game.py</path>
 </paths>
 <msg>Added starting point of number guessing game exercise</msg>
 </logentry>
