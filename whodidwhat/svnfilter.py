@@ -8,12 +8,11 @@ from datetime import datetime
 
 class SvnFilter(object):
 
+    def __init__(self):
+        self._statistics = Statistics()
+
     def parse_parameters_and_filter(self, argv=None):
         parameters = self.parse_parameters(argv)
-        if parameters.statistics_file:
-            self._statistics_file = open(parameters.statistics_file, 'w')
-        else:
-            self._statistics_file = sys.stdout
         if parameters.input_xml:
             self._input_xmls = [SvnLogText(parameters.input_xml.read())]
         else:
@@ -24,10 +23,21 @@ class SvnFilter(object):
         if parameters.blame_folder:
             self.blame_active_files(parameters.blame_folder,
                                         filtered_element_tree)
+        self.write_statistics(parameters.statistics_file)
+
+    def write_statistics(self, statistics_filename):
+        statistics_txt = 'Top changed lines:\n'
+        statistics_txt += self._statistics.get_changed_lines_by_team()
+        statistics_txt += 'Top commit counts:\n'
+        statistics_txt += self._statistics.get_commit_counts_text()
+        if statistics_filename:
+            with open(statistics_filename, 'w') as statistics_file:
+                statistics_file.write(statistics_txt)
+        else:
+            print(statistics_txt)
 
     def blame_active_files(self, blame_folder, filtered_et):
         active_files = self.find_active_files(filtered_et)
-        blamed_lines_per_file = {}
         for filename in active_files:
             server_name = self.get_server_name(filename, self._input_xmls)
             try:
@@ -36,12 +46,8 @@ class SvnFilter(object):
                 continue
             basename = os.path.split(server_name)[-1]
             with open(os.path.join(blame_folder, basename), 'w') as blamefile:
-                team_blame, blamed_lines = self.blame_only_given_users(blame_log)
-                blamed_lines_per_file[server_name] = blamed_lines
+                team_blame = self.blame_only_given_users(blame_log, server_name)
                 blamefile.write(team_blame)
-        self._statistics_file.write('Top changed lines:\n')
-        for blamefile in sorted(blamed_lines_per_file, key=blamed_lines_per_file.get, reverse=True):
-            self._statistics_file.write('{}: {}\n'.format(blamefile, blamed_lines_per_file[blamefile]))
 
     def get_server_name(self, filename, svnlogtexts):
         for svnlogtext in svnlogtexts:
@@ -52,19 +58,12 @@ class SvnFilter(object):
 
     def find_active_files(self, et):
         root = et.getroot()
-        file_counts = {}
         for logentry in root.findall('logentry'):
             for path in logentry.find('paths'):
-                if path.text not in file_counts:
-                    file_counts[path.text] = 1
-                else:
-                    file_counts[path.text] += 1
-        self._statistics_file.write('Top commit counts:\n')
-        for f in sorted(file_counts, key=file_counts.get, reverse=True):
-            self._statistics_file.write('{}: {}\n'.format(f, file_counts[f]))
-        return sorted(file_counts, key=file_counts.get, reverse=True)
+                self._statistics.add_commit_count_by_team(path.text)
+        return self._statistics.get_commit_counts()
 
-    def blame_only_given_users(self, blame_log):
+    def blame_only_given_users(self, blame_log, server_name):
         blame_only_given = ''
         blamed_lines = 0
         for line in blame_log.splitlines(True):
@@ -74,7 +73,8 @@ class SvnFilter(object):
                 blamed_lines += 1
             else:
                 blame_only_given += self._remove_username(line, username)
-        return blame_only_given, blamed_lines
+        self._statistics.set_changed_lines_by_team_in_file(blamed_lines, server_name)
+        return blame_only_given
 
     def _remove_username(self, line, username):
         return line.replace(username, ' '*len(username), 1)
@@ -172,3 +172,32 @@ class SvnLogText(object):
         return cls(subprocess.check_output(svn_command), repository)
 
 
+class Statistics(object):
+
+    def __init__(self):
+        self._blamed_lines_by_team = {}
+        self._file_commit_counts_by_team = {}
+
+    def set_changed_lines_by_team_in_file(self, blamed_lines, server_name):
+        self._blamed_lines_by_team[server_name] = blamed_lines
+
+    def get_changed_lines_by_team(self):
+        changed_lines = ''
+        for blamefile in sorted(self._blamed_lines_by_team, key=self._blamed_lines_by_team.get, reverse=True):
+            changed_lines += '{}: {}\n'.format(blamefile, self._blamed_lines_by_team[blamefile])
+        return changed_lines
+
+    def add_commit_count_by_team(self, filename):
+        if filename in self._file_commit_counts_by_team:
+            self._file_commit_counts_by_team[filename] += 1
+        else:
+            self._file_commit_counts_by_team[filename] = 1
+
+    def get_commit_counts(self):
+        return sorted(self._file_commit_counts_by_team, key=self._file_commit_counts_by_team.get, reverse=True)
+
+    def get_commit_counts_text(self):
+        commit_counts_text = ''
+        for f in sorted(self._file_commit_counts_by_team, key=self._file_commit_counts_by_team.get, reverse=True):
+            commit_counts_text += '{}: {}\n'.format(f, self._file_commit_counts_by_team[f])
+        return commit_counts_text
