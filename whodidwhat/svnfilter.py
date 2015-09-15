@@ -49,8 +49,7 @@ class SvnFilter(object):
                 blame_log = subprocess.check_output(['svn', 'blame', server_name])
             except subprocess.CalledProcessError:
                 continue
-            basename = os.path.split(server_name)[-1]
-            with open(os.path.join(blame_folder, basename), 'w') as blamefile:
+            with open(os.path.join(blame_folder, self._get_blame_name(server_name)), 'w') as blamefile:
                 team_blame = self.blame_only_given_users(blame_log, server_name)
                 blamefile.write(team_blame)
 
@@ -60,6 +59,10 @@ class SvnFilter(object):
                 filename = filename.replace(svnlogtext.repository.prefix, '')
                 filename = filename.lstrip(os.path.sep)
                 return os.path.join(svnlogtext.repository.url, filename)
+
+    def _get_blame_name(self, server_name):
+        blame_name = server_name.replace('://', '.') 
+        return blame_name.replace('/', '.')
 
     def find_active_files(self, et):
         root = et.getroot()
