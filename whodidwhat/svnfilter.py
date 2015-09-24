@@ -3,6 +3,7 @@ import sys
 import os
 import subprocess
 import argparse
+import fnmatch
 from datetime import datetime
 from collections import defaultdict
 
@@ -14,6 +15,7 @@ class SvnFilter(object):
 
     def parse_parameters_and_filter(self, argv=None):
         parameters = self.parse_parameters(argv)
+        self._statistics.set_exclude_patterns(parameters.exclude)
         if parameters.input_xml:
             self._input_xmls = [SvnLogText(parameters.input_xml.read())]
         else:
@@ -27,19 +29,11 @@ class SvnFilter(object):
         self.write_statistics(parameters.statistics_file)
 
     def write_statistics(self, statistics_filename):
-        statistics_txt = 'Top changed lines by user\n'
-        statistics_txt += self._statistics.get_changed_lines_by_users_text()
-        statistics_txt += 'Top commit counts by user\n'
-        statistics_txt += self._statistics.get_commit_counts_by_users_text()
-        statistics_txt += 'Top changed lines:\n'
-        statistics_txt += self._statistics.get_changed_lines_by_files_text()
-        statistics_txt += 'Top commit counts:\n'
-        statistics_txt += self._statistics.get_commit_counts_by_files_text()
         if statistics_filename:
             with open(statistics_filename, 'w') as statistics_file:
-                statistics_file.write(statistics_txt)
+                statistics_file.write(self._statistics.get_full_text())
         else:
-            print(statistics_txt)
+            print(self._statistics.get_full_text())
 
     def blame_active_files(self, blame_folder, filtered_et):
         active_files = self.find_active_files(filtered_et)
@@ -49,9 +43,10 @@ class SvnFilter(object):
                 blame_log = subprocess.check_output(['svn', 'blame', server_name])
             except subprocess.CalledProcessError:
                 continue
-            with open(os.path.join(blame_folder, self._get_blame_name(server_name)), 'w') as blamefile:
-                team_blame = self.blame_only_given_users(blame_log, server_name)
-                blamefile.write(team_blame)
+            team_blame = self.blame_only_given_users(blame_log, server_name)
+            if self._statistics.get_changed_lines_by_files()[server_name]:
+                with open(os.path.join(blame_folder, self._get_blame_name(server_name)), 'w') as blamefile:
+                    blamefile.write(team_blame)
 
     def get_server_name(self, filename, svnlogtexts):
         for svnlogtext in svnlogtexts:
@@ -97,6 +92,7 @@ class SvnFilter(object):
         parser.add_argument('--blame-folder', help='folder to store blames of top committed files')
         parser.add_argument('-r', '--revision', help='revision info in similar format as svn log uses')
         parser.add_argument('--statistics-file', help='file to store statistics on the run instead of printing on screen')
+        parser.add_argument('--exclude', help='file name pattern to exclude from statistics and blame', action='append')
         return parser.parse_args(argv[1:])
 
     def _get_xml_logs(self, parameters):
@@ -116,7 +112,7 @@ class SvnFilter(object):
 
     def filter_logs_by_users(self, xml_log, userlist_file, outfile):
         self._userlist = self.read_userlist(userlist_file)
-        filtered_et, _ = self.get_logs_by_users(xml_log, self._userlist)
+        filtered_et, _ = self.get_logs_by_users(xml_log)
         if outfile is not None:
             filtered_et.write(outfile, encoding='UTF-8', xml_declaration=True)
         return filtered_et
@@ -128,8 +124,8 @@ class SvnFilter(object):
                 users.append(line.strip())
         return sorted(users)
 
-    def get_logs_by_users(self, xml_logs, users):
-        result_et, result_root = self._combine_logs_from_all_xmls_by_users(xml_logs, users)
+    def get_logs_by_users(self, xml_logs):
+        result_et, result_root = self._combine_logs_from_all_xmls_by_users(xml_logs, self._userlist)
         return self._sort_combined_tree_by_date(result_et, result_root)
 
     def _combine_logs_from_all_xmls_by_users(self, xml_logs, users):
@@ -186,16 +182,33 @@ class Statistics(object):
         self._blamed_lines_by_user = defaultdict(lambda: 0)
         self._commit_counts_by_file = defaultdict(lambda: 0)
         self._commit_counts_by_user = defaultdict(lambda: 0)
+        self.exclude_patterns = None
+
+    def set_exclude_patterns(self, patterns):
+        self.exclude_patterns = patterns
 
     def add_changed_line(self, server_name, author):
-        self._blamed_lines_by_file[server_name] += 1
-        self._blamed_lines_by_user[author] += 1
+        if not self._is_excluded_file(server_name):
+            self._blamed_lines_by_file[server_name] += 1
+            self._blamed_lines_by_user[author] += 1
 
     def add_commit_count(self, author):
         self._commit_counts_by_user[author] += 1
 
     def add_commit_count_of_file(self, filename):
-        self._commit_counts_by_file[filename] += 1
+        if not self._is_excluded_file(filename):
+            self._commit_counts_by_file[filename] += 1
+
+    def _is_excluded_file(self, filename):
+        if self.exclude_patterns is None:
+            return False
+        for pattern in self.exclude_patterns:
+            if fnmatch.fnmatch(filename, pattern):
+                return True
+        return False
+
+    def get_changed_lines_by_files(self):
+        return self._blamed_lines_by_file
 
     def get_changed_lines_by_files_text(self):
         return self._to_text(self._blamed_lines_by_file)
@@ -212,6 +225,9 @@ class Statistics(object):
     def get_commit_counts_by_files_text(self):
         return self._to_text(self._commit_counts_by_file)
 
+    def get_commit_counts_by_files(self):
+        return self._commit_counts_by_file
+
     def get_commit_counts_by_users(self):
         return self._commit_counts_by_user
 
@@ -223,3 +239,14 @@ class Statistics(object):
 
     def get_changed_lines_by_users_text(self):
         return self._to_text(self._blamed_lines_by_user)
+
+    def get_full_text(self):
+        statistics_txt = 'Top changed lines by user\n'
+        statistics_txt += self.get_changed_lines_by_users_text()
+        statistics_txt += 'Top commit counts by user\n'
+        statistics_txt += self.get_commit_counts_by_users_text()
+        statistics_txt += 'Top changed lines:\n'
+        statistics_txt += self.get_changed_lines_by_files_text()
+        statistics_txt += 'Top commit counts:\n'
+        statistics_txt += self.get_commit_counts_by_files_text()
+        return statistics_txt
