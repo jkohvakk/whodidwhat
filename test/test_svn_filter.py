@@ -180,7 +180,6 @@ basvodde
         check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         self.assertEqual([], open_mock().write.mock_calls)
 
-
     def test_get_server_name(self):
         log_texts = [SvnLogText('', RepositoryUrl('https://svn.com/foo/bar', 'foobar')),
                      SvnLogText('', RepositoryUrl('https://googlecode.com/statsvn', 'statsvn'))]
@@ -189,12 +188,12 @@ basvodde
 
     RAW_BLAME_TEXT = '''\
 308498   jawinter class RammbockCore(object):
-308499   jkohvakk 
+308499   jkohvakk
 308499   jkohvakk     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
-308499   jkohvakk 
+308499   jkohvakk
 308500   kmikajar     def __init__(self):
 308500   kmikajar         self._init_caches()
-308500   kmikajar 
+308500   kmikajar
 308498   jawinter     def _init_caches(self):
 308498   jawinter         self._protocol_in_progress = None
 308498   jawinter         self._protocols = {}
@@ -202,12 +201,12 @@ basvodde
 
     EXPECTED_BLAME_ONLY = '''\
 308498            class RammbockCore(object):
-308499   jkohvakk 
+308499   jkohvakk
 308499   jkohvakk     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
-308499   jkohvakk 
+308499   jkohvakk
 308500   kmikajar     def __init__(self):
 308500   kmikajar         self._init_caches()
-308500   kmikajar 
+308500   kmikajar
 308498                def _init_caches(self):
 308498                    self._protocol_in_progress = None
 308498                    self._protocols = {}
@@ -224,7 +223,7 @@ basvodde
 class TestStatistics(unittest.TestCase):
 
     def setUp(self):
-        self.statistics = Statistics() 
+        self.statistics = Statistics()
         self.statistics.add_changed_line('file1', 'jkohvakk')
         self.statistics.add_changed_line('file2', 'jkohvakk')
         self.statistics.add_changed_line('file2', 'kmikajar')
@@ -261,4 +260,3 @@ jkohvakk: 1
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
-    

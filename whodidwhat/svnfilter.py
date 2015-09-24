@@ -19,11 +19,11 @@ class SvnFilter(object):
         else:
             self._input_xmls = self._get_xml_logs(parameters)
         filtered_element_tree = self.filter_logs_by_users(self._input_xmls,
-                                  parameters.users_file,
-                                  parameters.output_xml)
+                                                          parameters.users_file,
+                                                          parameters.output_xml)
         if parameters.blame_folder:
             self.blame_active_files(parameters.blame_folder,
-                                        filtered_element_tree)
+                                    filtered_element_tree)
         self.write_statistics(parameters.statistics_file)
 
     def write_statistics(self, statistics_filename):
@@ -61,7 +61,7 @@ class SvnFilter(object):
                 return os.path.join(svnlogtext.repository.url, filename)
 
     def _get_blame_name(self, server_name):
-        blame_name = server_name.replace('://', '.') 
+        blame_name = server_name.replace('://', '.')
         return blame_name.replace('/', '.')
 
     def find_active_files(self, et):
@@ -85,7 +85,7 @@ class SvnFilter(object):
         return blame_only_given
 
     def _remove_username(self, line, username):
-        return line.replace(username, ' '*len(username), 1)
+        return line.replace(username, ' ' * len(username), 1)
 
     def parse_parameters(self, argv):
         argv = argv if argv is not None else sys.argv
