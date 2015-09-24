@@ -191,10 +191,12 @@ basvodde
         self.assertEqual([], open_mock().write.mock_calls)
 
     def test_get_server_name(self):
-        log_texts = [SvnLogText('', RepositoryUrl('https://svn.com/foo/bar', 'foobar')),
+        log_texts = [SvnLogText('', RepositoryUrl('https://svn.com/foo/bar/dadadii', 'foobar')),
                      SvnLogText('', RepositoryUrl('https://googlecode.com/statsvn', 'statsvn'))]
         self.assertEqual('https://googlecode.com/statsvn/stats.cpp',
                          self.log_filter.get_server_name('/statsvn/stats.cpp', log_texts))
+        self.assertEqual('https://svn.com/foo/bar/dadadii/stats.cpp',
+                         self.log_filter.get_server_name('/foobar/bar/dadadii/stats.cpp', log_texts))
 
     RAW_BLAME_TEXT = '''\
 308498   jawinter class RammbockCore(object):

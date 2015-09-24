@@ -53,7 +53,24 @@ class SvnFilter(object):
             if svnlogtext.repository and svnlogtext.repository.prefix in filename:
                 filename = filename.replace(svnlogtext.repository.prefix, '')
                 filename = filename.lstrip(os.path.sep)
-                return os.path.join(svnlogtext.repository.url, filename)
+                return self._merge_common_parts(svnlogtext.repository.url, filename)
+    
+    def _merge_common_parts(self, repository, filename):
+        repository_in_parts = self.split_all(repository)
+        filename_in_parts = self.split_all(filename)
+        for repo_part in repository_in_parts:
+            if repo_part in filename_in_parts:
+                filename_in_parts.remove(repo_part)
+        filename = os.path.join(*filename_in_parts)
+        return os.path.join(repository, filename)
+
+    def split_all(self, path):
+        parts = []
+        while True:
+            path, last = os.path.split(path)
+            parts.insert(0, last)
+            if not path or path == os.path.sep:
+                return parts
 
     def _get_blame_name(self, server_name):
         blame_name = server_name.replace('://', '.')
