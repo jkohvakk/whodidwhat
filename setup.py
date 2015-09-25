@@ -6,7 +6,7 @@ here = path.abspath(path.dirname(__file__))
 
 setup(
     name='whodidwhat',
-    version='0.0.2a1',
+    version='0.0.2a2',
     description='Package for filtering vcs repositories',
     long_description='',
 
