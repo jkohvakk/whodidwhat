@@ -4,6 +4,7 @@ import os
 import subprocess
 import argparse
 import fnmatch
+import re
 from datetime import datetime
 from collections import defaultdict
 
@@ -23,8 +24,9 @@ class SvnFilter(object):
         filtered_element_tree = self.filter_logs_by_users(self._input_xmls,
                                                           parameters.users_file,
                                                           parameters.output_xml)
-        if parameters.blame_folder:
+        if parameters.blame_folder or parameters.combine_blame:
             self.blame_active_files(parameters.blame_folder,
+                                    parameters.combine_blame,
                                     filtered_element_tree)
         self.write_statistics(parameters.statistics_file)
 
@@ -35,18 +37,24 @@ class SvnFilter(object):
         else:
             print(self._statistics.get_full_text())
 
-    def blame_active_files(self, blame_folder, filtered_et):
+    def blame_active_files(self, blame_folder, combined_blame, filtered_et):
         active_files = self.find_active_files(filtered_et)
+        total_blamed_lines = ''
         for filename in active_files:
             server_name = self.get_server_name(filename, self._input_xmls)
             try:
                 blame_log = subprocess.check_output(['svn', 'blame', server_name])
             except subprocess.CalledProcessError:
                 continue
-            team_blame = self.blame_only_given_users(blame_log, server_name)
+            team_blame, blamed_lines = self.blame_only_given_users(blame_log, server_name)
+            total_blamed_lines += blamed_lines
             if self._statistics.get_changed_lines_by_files()[server_name]:
-                with open(os.path.join(blame_folder, self._get_blame_name(server_name)), 'w') as blamefile:
-                    blamefile.write(team_blame)
+                if blame_folder:
+                    with open(os.path.join(blame_folder, self._get_blame_name(server_name)), 'w') as blamefile:
+                        blamefile.write(team_blame)
+        if combined_blame:
+            with open(combined_blame, 'w') as combined_blame_file:
+                combined_blame_file.write(total_blamed_lines)
 
     def get_server_name(self, filename, svnlogtexts):
         for svnlogtext in svnlogtexts:
@@ -87,30 +95,34 @@ class SvnFilter(object):
 
     def blame_only_given_users(self, blame_log, server_name):
         blame_only_given = ''
+        lines_by_team = ''
+        revision_and_user = re.compile(r'\s*\d+\s+\S+')
         for line in blame_log.splitlines(True):
             username = line.split()[1]
             if username in self._userlist:
                 blame_only_given += line
+                lines_by_team += line[revision_and_user.match(line).end():]
                 self._statistics.add_changed_line(server_name, username)
             else:
                 blame_only_given += self._remove_username(line, username)
-        return blame_only_given
+        return blame_only_given, lines_by_team
 
     def _remove_username(self, line, username):
         return line.replace(username, ' ' * len(username), 1)
 
     def parse_parameters(self, argv):
         argv = argv if argv is not None else sys.argv
-        parser = argparse.ArgumentParser('Filter svn and git repositories based on list of users')
-        parser.add_argument('--input-xml', help='path to svn xml log input', type=file)
-        parser.add_argument('--users-file', help='file of usernames given line-by-line', type=argparse.FileType('r'))
-        parser.add_argument('--input-svn-repos', help='file of svn repository paths given line-by-line', type=file)
-        parser.add_argument('--output-xml', help='path for writing filtered xml')
-        parser.add_argument('--blame-folder', help='folder to store blames of top committed files')
-        parser.add_argument('-r', '--revision', help='revision info in similar format as svn log uses')
-        parser.add_argument('--statistics-file', help='file to store statistics on the run instead of printing on screen')
-        parser.add_argument('--exclude', help='file name pattern to exclude from statistics and blame', action='append')
-        return parser.parse_args(argv[1:])
+        p = argparse.ArgumentParser('Filter svn and git repositories based on list of users')
+        p.add_argument('--input-xml', help='path to svn xml log input', type=file)
+        p.add_argument('--users-file', help='file of usernames given line-by-line', type=argparse.FileType('r'))
+        p.add_argument('--input-svn-repos', help='file of svn repository paths given line-by-line', type=file)
+        p.add_argument('--output-xml', help='path for writing filtered xml')
+        p.add_argument('--blame-folder', help='folder to store blames of top committed files')
+        p.add_argument('-r', '--revision', help='revision info in similar format as svn log uses')
+        p.add_argument('--statistics-file', help='file to store statistics on the run instead of printing on screen')
+        p.add_argument('--exclude', help='file name pattern to exclude from statistics and blame', action='append')
+        p.add_argument('--combine-blame', help='combine all blamed lines by team into one giant file')
+        return p.parse_args(argv[1:])
 
     def _get_xml_logs(self, parameters):
         repositories = self._read_repository_urls(parameters.input_svn_repos)
@@ -258,9 +270,9 @@ class Statistics(object):
         return self._to_text(self._blamed_lines_by_user)
 
     def get_full_text(self):
-        statistics_txt = 'Top changed lines by user\n'
+        statistics_txt = 'Top changed lines by user:\n'
         statistics_txt += self.get_changed_lines_by_users_text()
-        statistics_txt += 'Top commit counts by user\n'
+        statistics_txt += 'Top commit counts by user:\n'
         statistics_txt += self.get_commit_counts_by_users_text()
         statistics_txt += 'Top changed lines:\n'
         statistics_txt += self.get_changed_lines_by_files_text()

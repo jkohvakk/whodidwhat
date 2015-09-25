@@ -6,7 +6,7 @@ import subprocess
 import xml.etree.cElementTree as ET
 from whodidwhat.svnfilter import SvnFilter, SvnLogText, RepositoryUrl, Statistics
 
-from mock import patch, call, Mock, mock_open
+from mock import patch, call, Mock, MagicMock, mock_open
 
 MODULE_DIR = os.path.dirname(__file__)
 
@@ -86,6 +86,19 @@ basvodde
                                                      '-r', '1234:HEAD'])
         self.assertEqual(['*.xml', '*.qc'], self.log_filter._statistics.exclude_patterns) 
 
+    @patch('whodidwhat.svnfilter.sys.stdout')
+    @patch('whodidwhat.svnfilter.SvnFilter.filter_logs_by_users')
+    @patch('whodidwhat.svnfilter.SvnFilter.blame_active_files')
+    def test_reading_collect_blame(self, blame_active_files_mock, filter_logs_by_users_mock, stdout_mock):
+        mock_et = MagicMock()
+        filter_logs_by_users_mock.return_value = mock_et
+        self.log_filter.parse_parameters_and_filter(['whodidwhat',
+                                                     '--input-xml', self.svn_xml, 
+                                                     '--users-file', self.usersfile,
+                                                     '--combine-blame', 'combined_blame.cpp',
+                                                     '--blame-folder', 'blame'])
+        blame_active_files_mock.assert_called_once_with('blame', 'combined_blame.cpp', mock_et)
+
     @patch('whodidwhat.svnfilter.SvnFilter.read_userlist')
     @patch('whodidwhat.svnfilter.SvnFilter.get_logs_by_users')
     def test_if_output_xml_is_not_given_writing_is_skipped(self, get_logs_by_users_mock, read_userlist_mock):
@@ -145,6 +158,21 @@ basvodde
 
     @patch('whodidwhat.svnfilter.subprocess.check_output')
     @patch('__builtin__.open', new_callable=mock_open)
+    def test_combine_blame(self, open_mock, check_output_mock):
+        xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
+        self.log_filter._input_xmls = xml_log_text
+        self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
+        tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
+        check_output_mock.return_value = self.RAW_BLAME_TEXT
+
+        self.log_filter.blame_active_files(None, 'combine.cpp', tree)
+
+        check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
+        open_mock.assert_called_once_with('combine.cpp', 'w')
+        open_mock().write.assert_called_with(self.LINES_BY_TEAM)
+
+    @patch('whodidwhat.svnfilter.subprocess.check_output')
+    @patch('__builtin__.open', new_callable=mock_open)
     def test_blame_active_files_happy_path(self, open_mock, check_output_mock):
         xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
         self.log_filter._input_xmls = xml_log_text
@@ -152,7 +180,7 @@ basvodde
         tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
         check_output_mock.return_value = self.RAW_BLAME_TEXT
 
-        self.log_filter.blame_active_files('blame', tree)
+        self.log_filter.blame_active_files('blame', None, tree)
 
         check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         open_mock.assert_called_once_with('blame/https.svn.com.exercises.number_guessing_game.tst.test_number_guessing_game.py', 'w')
@@ -172,7 +200,7 @@ basvodde
         tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
         check_output_mock.return_value = self.RAW_BLAME_TEXT
 
-        self.log_filter.blame_active_files('blame', tree)
+        self.log_filter.blame_active_files('blame', None, tree)
 
         check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         self.assertEqual([], open_mock().write.mock_calls)
@@ -186,7 +214,7 @@ basvodde
         tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
         check_output_mock.return_value = self.RAW_BLAME_TEXT
 
-        self.log_filter.blame_active_files('blame', tree)
+        self.log_filter.blame_active_files('blame', None, tree)
 
         self.assertEqual([], open_mock().write.mock_calls)
 
@@ -224,9 +252,18 @@ basvodde
 308498                    self._protocols = {}
 365453                    self._servers = _NamedCache('server', "No servers defined!")'''
 
+    LINES_BY_TEAM = '''\
+
+     ROBOT_LIBRARY_SCOPE = 'GLOBAL'
+
+     def __init__(self):
+         self._init_caches()
+
+'''
+
     def test_blame_only_given_users(self):
         self.log_filter._userlist = ['jkohvakk', 'kmikajar']
-        self.assertEqual(self.EXPECTED_BLAME_ONLY,
+        self.assertEqual((self.EXPECTED_BLAME_ONLY, self.LINES_BY_TEAM),
                          self.log_filter.blame_only_given_users(self.RAW_BLAME_TEXT, 'dummy_server_name'))
         self.assertEqual(3, self.log_filter._statistics.get_changed_lines_by_users()['jkohvakk'])
         self.assertEqual(3, self.log_filter._statistics.get_changed_lines_by_users()['kmikajar'])
@@ -271,10 +308,10 @@ jkohvakk: 1
 
     def test_get_full_text(self):
         self.assertEqual('''\
-Top changed lines by user
+Top changed lines by user:
 jkohvakk: 2
 kmikajar: 1
-Top commit counts by user
+Top commit counts by user:
 kmikajar: 1
 jkohvakk: 1
 Top changed lines:
