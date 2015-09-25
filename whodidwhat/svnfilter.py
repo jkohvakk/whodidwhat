@@ -61,7 +61,7 @@ class SvnFilter(object):
         for repo_part in repository_in_parts:
             if repo_part in filename_in_parts:
                 filename_in_parts.remove(repo_part)
-        filename = os.path.join(*filename_in_parts)
+        filename = os.path.join(*filename_in_parts) if filename_in_parts else ''
         return os.path.join(repository, filename)
 
     def split_all(self, path):
