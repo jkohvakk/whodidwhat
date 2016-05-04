@@ -4,7 +4,7 @@ import StringIO
 import filecmp
 import subprocess
 import xml.etree.cElementTree as ET
-from whodidwhat.svnfilter import SvnFilter, SvnLogText, RepositoryUrl, Statistics
+from whodidwhat.svnfilter import SvnFilter, SvnLogText, RepositoryUrl, Statistics, split_all, get_all_folder_levels
 
 from mock import patch, call, Mock, MagicMock, mock_open
 
@@ -273,53 +273,103 @@ class TestStatistics(unittest.TestCase):
 
     def setUp(self):
         self.statistics = Statistics()
-        self.statistics.add_changed_line('file1', 'jkohvakk')
-        self.statistics.add_changed_line('file2', 'jkohvakk')
-        self.statistics.add_changed_line('file2', 'kmikajar')
+        self.statistics.add_changed_line('trunk/file1', 'jkohvakk')
+        self.statistics.add_changed_line('branch/file2', 'jkohvakk')
+        self.statistics.add_changed_line('branch/file2', 'jkohvakk')
+        self.statistics.add_commit_count_of_file('trunk/file1')
+        self.statistics.add_commit_count_of_file('branch/file2')
         self.statistics.add_commit_count('jkohvakk')
+
+        self.statistics.add_changed_line('branch/file2', 'kmikajar')
         self.statistics.add_commit_count('kmikajar')
-        self.statistics.add_commit_count_of_file('file1')
-        self.statistics.add_commit_count_of_file('file2')
-        self.statistics.add_commit_count_of_file('file2')
+        self.statistics.add_commit_count_of_file('branch/file2')
+
+        self.statistics.add_changed_line('spike/deep_nesting/file2', 'jkohvakk')
+        self.statistics.add_commit_count('jkohvakk')
+        self.statistics.add_commit_count_of_file('spike/deep_nesting/file2')
 
     def test_changed_lines_by_files_text(self):
         self.assertEqual('''\
-file2: 2
-file1: 1
+branch/file2: 3
+spike/deep_nesting/file2: 1
+trunk/file1: 1
 ''', self.statistics.get_changed_lines_by_files_text())
+
+    def test_changed_lines_by_folders_text(self):
+        self.assertEqual('''\
+---------------- level 1 ---------------------------------
+branch: 3
+spike: 1
+trunk: 1
+---------------- level 2 ---------------------------------
+spike/deep_nesting: 1
+''', self.statistics.get_changed_lines_by_folders_text())
 
     def test_changed_lines_by_users_text(self):
         self.assertEqual('''\
-jkohvakk: 2
+jkohvakk: 4
 kmikajar: 1
 ''', self.statistics.get_changed_lines_by_users_text())
 
     def test_commit_counts_by_files_text(self):
         self.assertEqual('''\
-file2: 2
-file1: 1
+branch/file2: 2
+spike/deep_nesting/file2: 1
+trunk/file1: 1
 ''', self.statistics.get_commit_counts_by_files_text())
 
     def test_commit_counts_by_users_text(self):
         self.assertEqual('''\
+jkohvakk: 2
 kmikajar: 1
-jkohvakk: 1
 ''', self.statistics.get_commit_counts_by_users_text())
+
+    def test_commit_counts_by_folders_text(self):
+        self.assertEqual('''\
+---------------- level 1 ---------------------------------
+branch: 2
+spike: 1
+trunk: 1
+---------------- level 2 ---------------------------------
+spike/deep_nesting: 1
+''', self.statistics.get_commit_counts_by_folders_text())
 
     def test_get_full_text(self):
         self.assertEqual('''\
+==========================================================
 Top changed lines by user:
+jkohvakk: 4
+kmikajar: 1
+==========================================================
+Top commit counts by user:
 jkohvakk: 2
 kmikajar: 1
-Top commit counts by user:
-kmikajar: 1
-jkohvakk: 1
-Top changed lines:
-file2: 2
-file1: 1
-Top commit counts:
-file2: 2
-file1: 1
+==========================================================
+Top changed lines in folders:
+---------------- level 1 ---------------------------------
+branch: 3
+spike: 1
+trunk: 1
+---------------- level 2 ---------------------------------
+spike/deep_nesting: 1
+==========================================================
+Top committed folders:
+---------------- level 1 ---------------------------------
+branch: 2
+spike: 1
+trunk: 1
+---------------- level 2 ---------------------------------
+spike/deep_nesting: 1
+==========================================================
+Top changed lines in files:
+branch/file2: 3
+spike/deep_nesting/file2: 1
+trunk/file1: 1
+==========================================================
+Top commit counts in files:
+branch/file2: 2
+spike/deep_nesting/file2: 1
+trunk/file1: 1
 ''', self.statistics.get_full_text())
 
     def test_exclude_pattern(self):
@@ -343,6 +393,18 @@ file1: 1
         self.assertEqual(0, s.get_changed_lines_by_users()['kmikajar'])
 
 
+class TestFileNameFunctions(unittest.TestCase):
+
+    def test_split_all(self):
+        parts = split_all('foo/bar/daa.cpp')
+        self.assertEqual(['foo', 'bar', 'daa.cpp'], parts)
+
+    def test_get_all_folder_levels(self):
+        self.assertEqual(['first'], get_all_folder_levels('first/foo.cpp'))
+        self.assertEqual(['first', 'first/second'], get_all_folder_levels('first/second/foo.cpp'))
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
+
