@@ -40,9 +40,10 @@ class Statistics(object):
     def get_changed_lines_by_files_text(self):
         return self._to_text(self._blamed_lines_by_file)
 
-    def _to_text(self, statistic):
+    def _to_text(self, statistic, limit=None):
         text = ''
-        for item in sorted(statistic.items(), key=lambda it: (-it[1], it[0])):
+        limit = limit if limit is not None else len(statistic)
+        for item in sorted(statistic.items(), key=lambda it: (-it[1], it[0]))[:limit]:
             text += '{}: {}\n'.format(item[0], item[1])
         return text
 
@@ -71,7 +72,7 @@ class Statistics(object):
         total_text = ''
         for i, folder_level in enumerate(self.get_changed_lines_by_folders()):
             total_text += '---------------- level {} ---------------------------------\n'.format(i + 1)
-            total_text += self._to_text(folder_level)
+            total_text += self._to_text(folder_level, 7)
         return total_text
 
     def get_changed_lines_by_folders(self):
@@ -91,7 +92,7 @@ class Statistics(object):
         total_text = ''
         for i, folder_level in enumerate(self.get_commit_counts_by_folders()):
             total_text += '---------------- level {} ---------------------------------\n'.format(i + 1)
-            total_text += self._to_text(folder_level)
+            total_text += self._to_text(folder_level, 7)
         return total_text
 
     def get_commit_counts_by_folders(self):

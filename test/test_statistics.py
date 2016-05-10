@@ -125,6 +125,14 @@ trunk/file1: 1
         self.assertEqual(1, s.get_changed_lines_by_users()['jkohvakk'])
         self.assertEqual(0, s.get_changed_lines_by_users()['kmikajar'])
 
+    def test_limit_in_to_text(self):
+        s = Statistics()
+        data = {'foo': 4, 'bar': 10, 'daa': 5, 'dii': 2}
+        self.assertEqual('''\
+bar: 10
+daa: 5
+foo: 4
+''', s._to_text(data, 3))
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
