@@ -201,7 +201,7 @@ basvodde
         check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         open_mock.assert_called_once_with('blame/https.svn.com.exercises.number_guessing_game.tst.test_number_guessing_game.py', 'w')
         open_mock().write.assert_called_with(self.EXPECTED_BLAME_ONLY)
-        self.assertEqual(self.log_filter._statistics.get_changed_lines_by_files_text(),
+        self.assertEqual(self.log_filter._statistics.printer.write(self.log_filter._statistics.get_changed_lines_by_files()),
                          'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py: 6\n')
 
     @patch('whodidwhat.svnfilter.SvnFilter.blame_only_given_users')

@@ -29,10 +29,12 @@ class SvnFilter(object):
 
     def write_statistics(self, parameters):
         if parameters.statistics_file:
+            if os.path.splitext(parameters.statistics_file).lower() in ('.htm, .html'):
+                self._statistics.set_printer(statistics.HtmlPrinter(parameters.blame_folder))
             with open(parameters.statistics_file, 'w') as statistics_file:
-                statistics_file.write(self._statistics.get_full_text())
+                statistics_file.write(self._statistics.get_full())
         else:
-            print(self._statistics.get_full_text())
+            print(self._statistics.get_full())
 
     def blame_active_files(self, parameters, filtered_et):
         active_files = self.find_active_files(filtered_et)

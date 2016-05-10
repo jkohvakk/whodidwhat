@@ -26,7 +26,7 @@ class TestStatistics(unittest.TestCase):
 branch/file2: 3
 spike/deep_nesting/file2: 1
 trunk/file1: 1
-''', self.statistics.get_changed_lines_by_files_text())
+''', self.statistics.printer.write(self.statistics.get_changed_lines_by_files()))
 
     def test_changed_lines_by_folders_text(self):
         self.assertEqual('''\
@@ -36,26 +36,26 @@ spike: 1
 trunk: 1
 ---------------- level 2 ---------------------------------
 spike/deep_nesting: 1
-''', self.statistics.get_changed_lines_by_folders_text())
+''', self.statistics.printer.write_folders(self.statistics.get_changed_lines_by_folders()))
 
     def test_changed_lines_by_users_text(self):
         self.assertEqual('''\
 jkohvakk: 4
 kmikajar: 1
-''', self.statistics.get_changed_lines_by_users_text())
+''', self.statistics.printer.write(self.statistics.get_changed_lines_by_users()))
 
     def test_commit_counts_by_files_text(self):
         self.assertEqual('''\
 branch/file2: 2
 spike/deep_nesting/file2: 1
 trunk/file1: 1
-''', self.statistics.get_commit_counts_by_files_text())
+''', self.statistics.printer.write(self.statistics.get_commit_counts_by_files()))
 
     def test_commit_counts_by_users_text(self):
         self.assertEqual('''\
 jkohvakk: 2
 kmikajar: 1
-''', self.statistics.get_commit_counts_by_users_text())
+''', self.statistics.printer.write(self.statistics.get_commit_counts_by_users()))
 
     def test_commit_counts_by_folders_text(self):
         self.assertEqual('''\
@@ -65,9 +65,9 @@ spike: 1
 trunk: 1
 ---------------- level 2 ---------------------------------
 spike/deep_nesting: 1
-''', self.statistics.get_commit_counts_by_folders_text())
+''', self.statistics.printer.write_folders(self.statistics.get_commit_counts_by_folders()))
 
-    def test_get_full_text(self):
+    def test_get_full(self):
         self.assertEqual('''\
 ==========================================================
 Top changed lines by user:
@@ -103,7 +103,7 @@ Top commit counts in files:
 branch/file2: 2
 spike/deep_nesting/file2: 1
 trunk/file1: 1
-''', self.statistics.get_full_text())
+''', self.statistics.get_full())
 
     def test_exclude_pattern(self):
         s = Statistics()
@@ -132,7 +132,7 @@ trunk/file1: 1
 bar: 10
 daa: 5
 foo: 4
-''', s._to_text(data, 3))
+''', s.printer.write(data, 3))
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
