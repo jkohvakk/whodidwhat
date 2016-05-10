@@ -3,6 +3,7 @@ import os
 import StringIO
 import filecmp
 import subprocess
+import argparse
 import xml.etree.cElementTree as ET
 from whodidwhat.svnfilter import SvnFilter, SvnLogText, RepositoryUrl, Statistics, split_all, get_all_folder_levels
 
@@ -92,19 +93,27 @@ basvodde
     def test_reading_collect_blame(self, blame_active_files_mock, filter_logs_by_users_mock, stdout_mock):
         mock_et = MagicMock()
         filter_logs_by_users_mock.return_value = mock_et
+
         self.log_filter.parse_parameters_and_filter(['whodidwhat',
-                                                     '--input-xml', self.svn_xml, 
+                                                     '--input-xml', self.svn_xml,
                                                      '--users-file', self.usersfile,
                                                      '--combine-blame', 'combined_blame.cpp',
                                                      '--blame-folder', 'blame'])
-        blame_active_files_mock.assert_called_once_with('blame', 'combined_blame.cpp', mock_et)
+
+        call_params = blame_active_files_mock.mock_calls[0][1][0]
+        call_et = blame_active_files_mock.mock_calls[0][1][1]
+        self.assertEqual('blame', call_params.blame_folder)
+        self.assertEqual('combined_blame.cpp', call_params.combine_blame)
+        self.assertEqual(None, call_params.revision)
+        self.assertEqual(mock_et, call_et)
 
     @patch('whodidwhat.svnfilter.SvnFilter.read_userlist')
     @patch('whodidwhat.svnfilter.SvnFilter.get_logs_by_users')
     def test_if_output_xml_is_not_given_writing_is_skipped(self, get_logs_by_users_mock, read_userlist_mock):
         et_mock = Mock()
         get_logs_by_users_mock.return_value = (et_mock, Mock())
-        self.log_filter.filter_logs_by_users('xml_log', 'userlist_file', None)
+        params = argparse.Namespace(users_file='userlist_file', output_xml=None)
+        self.log_filter.filter_logs_by_users('xml_log', params)
         self.assertEqual([], et_mock.write.mock_calls)
 
     def test_filtering_two_logs_for_one_user(self):
@@ -164,10 +173,12 @@ basvodde
         self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
         tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
         check_output_mock.return_value = self.RAW_BLAME_TEXT
+        params = argparse.Namespace(blame_folder=None, combine_blame='combine.cpp', revision='{2015-08-01}:HEAD')
 
-        self.log_filter.blame_active_files(None, 'combine.cpp', tree)
+        self.log_filter.blame_active_files(params, tree)
 
-        check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
+        check_output_mock.assert_called_once_with(['svn', 'blame', '-r', '{2015-08-01}:HEAD',
+                                                   'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         open_mock.assert_called_once_with('combine.cpp', 'w')
         open_mock().write.assert_called_with(self.LINES_BY_TEAM)
 
@@ -179,8 +190,9 @@ basvodde
         self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
         tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
         check_output_mock.return_value = self.RAW_BLAME_TEXT
+        params = argparse.Namespace(blame_folder='blame', combine_blame=None, revision=None)
 
-        self.log_filter.blame_active_files('blame', None, tree)
+        self.log_filter.blame_active_files(params, tree)
 
         check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         open_mock.assert_called_once_with('blame/https.svn.com.exercises.number_guessing_game.tst.test_number_guessing_game.py', 'w')
@@ -199,8 +211,9 @@ basvodde
         self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
         tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
         check_output_mock.return_value = self.RAW_BLAME_TEXT
+        params = argparse.Namespace(blame_folder='blame', combine_blame=None, revision=None)
 
-        self.log_filter.blame_active_files('blame', None, tree)
+        self.log_filter.blame_active_files(params, tree)
 
         check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         self.assertEqual([], open_mock().write.mock_calls)
@@ -213,8 +226,9 @@ basvodde
         self.log_filter._userlist = ['happydude']
         tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
         check_output_mock.return_value = self.RAW_BLAME_TEXT
+        params = argparse.Namespace(blame_folder='blame', combine_blame=None, revision=None)
 
-        self.log_filter.blame_active_files('blame', None, tree)
+        self.log_filter.blame_active_files(params, tree)
 
         self.assertEqual([], open_mock().write.mock_calls)
 

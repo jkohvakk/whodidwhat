@@ -26,7 +26,6 @@ def get_all_folder_levels(path):
     return folder_levels
 
 
-
 class SvnFilter(object):
 
     def __init__(self):
@@ -39,39 +38,47 @@ class SvnFilter(object):
             self._input_xmls = [SvnLogText(parameters.input_xml.read())]
         else:
             self._input_xmls = self._get_xml_logs(parameters)
-        filtered_element_tree = self.filter_logs_by_users(self._input_xmls,
-                                                          parameters.users_file,
-                                                          parameters.output_xml)
+        filtered_element_tree = self.filter_logs_by_users(self._input_xmls, parameters)
         if parameters.blame_folder or parameters.combine_blame:
-            self.blame_active_files(parameters.blame_folder,
-                                    parameters.combine_blame,
-                                    filtered_element_tree)
-        self.write_statistics(parameters.statistics_file)
+            self.blame_active_files(parameters, filtered_element_tree)
+        self.write_statistics(parameters)
 
-    def write_statistics(self, statistics_filename):
-        if statistics_filename:
-            with open(statistics_filename, 'w') as statistics_file:
+    def write_statistics(self, parameters):
+        if parameters.statistics_file:
+            with open(parameters.statistics_file, 'w') as statistics_file:
                 statistics_file.write(self._statistics.get_full_text())
         else:
             print(self._statistics.get_full_text())
 
-    def blame_active_files(self, blame_folder, combined_blame, filtered_et):
+    def blame_active_files(self, parameters, filtered_et):
         active_files = self.find_active_files(filtered_et)
         total_blamed_lines = ''
         for filename in active_files:
             server_name = self.get_server_name(filename, self._input_xmls)
             try:
-                blame_log = subprocess.check_output(['svn', 'blame', server_name])
+                blame_log = subprocess.check_output(self._blame_command(server_name, parameters))
             except subprocess.CalledProcessError:
                 continue
             team_blame, blamed_lines = self.blame_only_given_users(blame_log, server_name)
             total_blamed_lines += blamed_lines
-            if self._statistics.get_changed_lines_by_files()[server_name]:
-                if blame_folder:
-                    with open(os.path.join(blame_folder, self._get_blame_name(server_name)), 'w') as blamefile:
-                        blamefile.write(team_blame)
-        if combined_blame:
-            with open(combined_blame, 'w') as combined_blame_file:
+            self._write_blamefile(team_blame, server_name, parameters)
+        self._write_combined_blame(total_blamed_lines, parameters)
+
+    def _blame_command(self, server_name, parameters):
+        blame_command = ['svn', 'blame']
+        if parameters.revision is not None:
+            blame_command.extend(['-r', parameters.revision])
+        return blame_command + [server_name]
+
+    def _write_blamefile(self, team_blame, server_name, parameters):
+        if self._statistics.get_changed_lines_by_files()[server_name]:
+            if parameters.blame_folder:
+                with open(os.path.join(parameters.blame_folder, self._get_blame_name(server_name)), 'w') as blamefile:
+                    blamefile.write(team_blame)
+
+    def _write_combined_blame(self, total_blamed_lines, parameters):
+        if parameters.combine_blame:
+            with open(parameters.combine_blame, 'w') as combined_blame_file:
                 combined_blame_file.write(total_blamed_lines)
 
     def get_server_name(self, filename, svnlogtexts):
@@ -104,18 +111,18 @@ class SvnFilter(object):
         return self._statistics.get_committed_files()
 
     def blame_only_given_users(self, blame_log, server_name):
-        blame_only_given = ''
-        lines_by_team = ''
+        blame_file_for_team = ''
+        lines_by_team_in_file = ''
         revision_and_user = re.compile(r'\s*\d+\s+\S+')
         for line in blame_log.splitlines(True):
             username = line.split()[1]
             if username in self._userlist:
-                blame_only_given += line
-                lines_by_team += line[revision_and_user.match(line).end():]
+                blame_file_for_team += line
+                lines_by_team_in_file += line[revision_and_user.match(line).end():]
                 self._statistics.add_changed_line(server_name, username)
             else:
-                blame_only_given += self._remove_username(line, username)
-        return blame_only_given, lines_by_team
+                blame_file_for_team += self._remove_username(line, username)
+        return blame_file_for_team, lines_by_team_in_file
 
     def _remove_username(self, line, username):
         return line.replace(username, ' ' * len(username), 1)
@@ -149,11 +156,11 @@ class SvnFilter(object):
                     repos.append(RepositoryUrl(components[0], components[1]))
         return repos
 
-    def filter_logs_by_users(self, xml_log, userlist_file, outfile):
-        self._userlist = self.read_userlist(userlist_file)
+    def filter_logs_by_users(self, xml_log, parameters):
+        self._userlist = self.read_userlist(parameters.users_file)
         filtered_et, _ = self.get_logs_by_users(xml_log)
-        if outfile is not None:
-            filtered_et.write(outfile, encoding='UTF-8', xml_declaration=True)
+        if parameters.output_xml is not None:
+            filtered_et.write(parameters.output_xml, encoding='UTF-8', xml_declaration=True)
         return filtered_et
 
     def read_userlist(self, userlist_file):
