@@ -2,6 +2,7 @@ from collections import defaultdict
 import fnmatch
 import path_functions
 
+
 class Statistics(object):
 
     def __init__(self):

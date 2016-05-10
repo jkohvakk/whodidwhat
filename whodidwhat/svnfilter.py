@@ -38,14 +38,13 @@ class SvnFilter(object):
         active_files = self.find_active_files(filtered_et)
         total_blamed_lines = ''
         for filename in active_files:
-            server_name = self.get_server_name(filename, self._input_xmls)
             try:
-                blame_log = subprocess.check_output(self._blame_command(server_name, parameters))
+                blame_log = subprocess.check_output(self._blame_command(filename, parameters))
             except subprocess.CalledProcessError:
                 continue
-            team_blame, blamed_lines = self.blame_only_given_users(blame_log, server_name)
+            team_blame, blamed_lines = self.blame_only_given_users(blame_log, filename)
             total_blamed_lines += blamed_lines
-            self._write_blamefile(team_blame, server_name, parameters)
+            self._write_blamefile(team_blame, filename, parameters)
         self._write_combined_blame(total_blamed_lines, parameters)
 
     def _blame_command(self, server_name, parameters):
@@ -91,7 +90,8 @@ class SvnFilter(object):
             author = logentry.find('author').text
             self._statistics.add_commit_count(author)
             for path in logentry.find('paths'):
-                self._statistics.add_commit_count_of_file(path.text)
+                server_name = self.get_server_name(path.text, self._input_xmls)
+                self._statistics.add_commit_count_of_file(server_name)
         return self._statistics.get_committed_files()
 
     def blame_only_given_users(self, blame_log, server_name):

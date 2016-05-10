@@ -136,12 +136,16 @@ basvodde
                          entries[0].find('paths')[0].text)
 
     def test_find_active_files(self):
+        xml_log_text = [SvnLogText(self.svn_xml_text, RepositoryUrl('https://svn.com/'))]
+        self.log_filter._input_xmls = xml_log_text
         self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
-        tree, _ = self.log_filter.get_logs_by_users([SvnLogText(self.svn_xml_text)])
-        self.assertEqual(['/tdd_in_c/dynamic_linker_seam/sut.c',
-                          '/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py',
-                          '/python_intermediate/exercises/number_guessing_game/src/number_guessing_game.py',
-                          '/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c'],
+
+        tree, _ = self.log_filter.get_logs_by_users(xml_log_text)
+
+        self.assertEqual(['https://svn.com/tdd_in_c/dynamic_linker_seam/sut.c',
+                          'https://svn.com/tdd_in_c/exercises/CCS_Refactoring_AaSysTime/CCS_Services/AaSysTime/ut/Fakes.c',
+                          'https://svn.com/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py',
+                          'https://svn.com/python_intermediate/exercises/number_guessing_game/src/number_guessing_game.py'],
                          self.log_filter.find_active_files(tree))
         self.assertEqual(1, self.log_filter._statistics.get_commit_counts_by_users()['kmikajar'])
         self.assertEqual(2, self.log_filter._statistics.get_commit_counts_by_users()['dems1e72'])
