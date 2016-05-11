@@ -164,14 +164,15 @@ class TestHtmlStatistics(unittest.TestCase):
 </table>''', ET.tostring(self.statistics.printer.write(self.statistics.get_changed_lines_by_users()),
                          method='html'))
 
-    def test_changed_lines_by_files(self):
+    def test_changed_lines_by_files_no_blame(self):
         self.assertEqual('''\
 <table>\
-<tr><td>branch/file2</td><td>3</td></tr>\
-<tr><td>spike/deep_nesting/file2</td><td>1</td></tr>\
-<tr><td>trunk/file1</td><td>1</td></tr>\
-</table>''', ET.tostring(self.statistics.printer.write(self.statistics.get_changed_lines_by_files()),
+<tr><td><a href="branch/file2">branch/file2</a></td><td>3</td></tr>\
+<tr><td><a href="spike/deep_nesting/file2">spike/deep_nesting/file2</a></td><td>1</td></tr>\
+<tr><td><a href="trunk/file1">trunk/file1</a></td><td>1</td></tr>\
+</table>''', ET.tostring(self.statistics.printer.write_links(self.statistics.get_changed_lines_by_files()),
                          method='html'))
+
 
     def test_commit_counts_by_folders(self):
         self.assertEqual('''\
@@ -179,15 +180,15 @@ class TestHtmlStatistics(unittest.TestCase):
 <tr>\
 <td>level</td><td>1</td>\
 <td><table>\
-<tr><td>branch</td><td>2</td></tr>\
-<tr><td>spike</td><td>1</td></tr>\
-<tr><td>trunk</td><td>1</td></tr>\
+<tr><td><a href="branch">branch</a></td><td>2</td></tr>\
+<tr><td><a href="spike">spike</a></td><td>1</td></tr>\
+<tr><td><a href="trunk">trunk</a></td><td>1</td></tr>\
 </table></td>\
 </tr>\
 <tr>\
 <td>level</td><td>2</td>\
 <td><table>\
-<tr><td>spike/deep_nesting</td><td>1</td></tr>\
+<tr><td><a href="spike/deep_nesting">spike/deep_nesting</a></td><td>1</td></tr>\
 </table></td>\
 </tr>\
 </table>\

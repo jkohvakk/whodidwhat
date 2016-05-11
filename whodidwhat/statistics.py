@@ -102,9 +102,9 @@ table, td, th {
         body.append(self.top_commit_counts_in_folders_header())
         body.append(self.write_folders(statistics.get_commit_counts_by_folders()))
         body.append(self.top_changed_lines_in_files_header())
-        body.append(self.write(statistics.get_changed_lines_by_files()))
+        body.append(self.write_links(statistics.get_changed_lines_by_files()))
         body.append(self.top_commit_counts_in_files_header())
-        body.append(self.write(statistics.get_commit_counts_by_files()))
+        body.append(self.write_links(statistics.get_commit_counts_by_files()))
         return ET.tostring(html, method='html')
 
     def write(self, statistic, limit=None):
@@ -115,6 +115,15 @@ table, td, th {
             row.append(self._create_element('td', text=str(item[1])))
         return table
 
+    def write_links(self, statistic, limit=None):
+        table = ET.Element('table')
+        for item in sorted(statistic.items(), key=lambda it: (-it[1], it[0]))[:limit]:
+            row = ET.SubElement(table, 'tr')
+            file_element = ET.SubElement(row, 'td')
+            file_element.append(self._create_element('a', text=item[0], href=item[0]))
+            row.append(self._create_element('td', text=str(item[1])))
+        return table
+
     def write_folders(self, level_list):
         table = ET.Element('table')
         for i, folder_level in enumerate(level_list):
@@ -122,7 +131,7 @@ table, td, th {
             row.append(self._create_element('td', text='level'))
             row.append(self._create_element('td', text=str(i + 1)))
             subtable = ET.SubElement(row, 'td')
-            subtable.append(self.write(folder_level, 7))
+            subtable.append(self.write_links(folder_level, 7))
         return table
 
     def top_changed_lines_by_user_header(self):
@@ -143,10 +152,12 @@ table, td, th {
     def top_commit_counts_in_files_header(self):
         return self._create_element('h2', text='Top commit counts in files')
 
-    def _create_element(self, tag, text=''):
+    def _create_element(self, tag, text='', **attribs):
         e = ET.Element(tag)
         if text:
             e.text = text
+        for attrib in attribs:
+            e.set(attrib, attribs[attrib])
         return e
 
 
