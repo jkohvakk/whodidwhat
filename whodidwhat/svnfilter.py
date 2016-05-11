@@ -58,7 +58,8 @@ class SvnFilter(object):
     def _write_blamefile(self, team_blame, server_name, parameters):
         if self._statistics.get_changed_lines_by_files()[server_name]:
             if parameters.blame_folder:
-                with open(os.path.join(parameters.blame_folder, self._get_blame_name(server_name)), 'w') as blamefile:
+                with open(os.path.join(parameters.blame_folder,
+                                       path_functions.get_blame_name(server_name)), 'w') as blamefile:
                     blamefile.write(team_blame)
 
     def _write_combined_blame(self, total_blamed_lines, parameters):
@@ -81,10 +82,6 @@ class SvnFilter(object):
                 filename_in_parts.remove(repo_part)
         filename = os.path.join(*filename_in_parts) if filename_in_parts else ''
         return os.path.join(repository, filename)
-
-    def _get_blame_name(self, server_name):
-        blame_name = server_name.replace('://', '.')
-        return blame_name.replace('/', '.')
 
     def find_active_files(self, et):
         root = et.getroot()

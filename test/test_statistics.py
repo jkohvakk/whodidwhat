@@ -1,7 +1,8 @@
 from whodidwhat.statistics import Statistics, HtmlPrinter
+from whodidwhat.path_functions import get_blame_name
 import unittest
 import xml.etree.ElementTree as ET
-
+import mock
 
 class TestStatistics(unittest.TestCase):
 
@@ -154,7 +155,7 @@ class TestHtmlStatistics(unittest.TestCase):
         self.statistics.add_changed_line('spike/deep_nesting/file2', 'jkohvakk')
         self.statistics.add_commit_count('jkohvakk')
         self.statistics.add_commit_count_of_file('spike/deep_nesting/file2')
-        self.statistics.set_printer(HtmlPrinter('blame'))
+        self.statistics.set_printer(HtmlPrinter(None))
 
     def test_changed_lines_by_users(self):
         self.assertEqual('''\
@@ -173,6 +174,17 @@ class TestHtmlStatistics(unittest.TestCase):
 </table>''', ET.tostring(self.statistics.printer.write_links(self.statistics.get_changed_lines_by_files()),
                          method='html'))
 
+    @mock.patch('whodidwhat.statistics.os.path.exists')
+    def test_changed_lines_by_files_with_blames(self, os_path_exists):
+        os_path_exists.return_value = True
+        self.statistics.set_printer(HtmlPrinter('blame'))
+        self.assertEqual('''\
+<table>\
+<tr><td><a href="branch/file2">branch/file2</a></td><td><a href="blame/branch.file2">blame</a></td><td>3</td></tr>\
+<tr><td><a href="spike/deep_nesting/file2">spike/deep_nesting/file2</a></td><td><a href="blame/spike.deep_nesting.file2">blame</a></td><td>1</td></tr>\
+<tr><td><a href="trunk/file1">trunk/file1</a></td><td><a href="blame/trunk.file1">blame</a></td><td>1</td></tr>\
+</table>''', ET.tostring(self.statistics.printer.write_links(self.statistics.get_changed_lines_by_files()),
+                         method='html'))
 
     def test_commit_counts_by_folders(self):
         self.assertEqual('''\
@@ -219,7 +231,10 @@ class TestHtmlStatistics(unittest.TestCase):
         self.assertEqual('<h2>Top commit counts in files</h2>',
                          ET.tostring(self.statistics.printer.top_commit_counts_in_files_header()))
 
-    def test_write_full_html(self):
+    @mock.patch('whodidwhat.statistics.os.path.exists')
+    def test_write_full_html(self, os_path_exists):
+        os_path_exists.return_value = True
+        self.statistics.set_printer(HtmlPrinter('blame'))
         open('test.html', 'w').write(self.statistics.get_full())
 
 

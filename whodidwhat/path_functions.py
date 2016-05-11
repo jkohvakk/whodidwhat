@@ -16,3 +16,8 @@ def get_all_folder_levels(path):
     for i in range(1, len(folders) + 1):
         folder_levels.append(os.path.sep.join(folders[:i]))
     return folder_levels
+
+
+def get_blame_name(server_name):
+        blame_name = server_name.replace('://', '.')
+        return blame_name.replace('/', '.')

@@ -1,6 +1,7 @@
 from collections import defaultdict
 import xml.etree.ElementTree as ET
 import fnmatch
+import os
 import path_functions
 
 
@@ -121,6 +122,11 @@ table, td, th {
             row = ET.SubElement(table, 'tr')
             file_element = ET.SubElement(row, 'td')
             file_element.append(self._create_element('a', text=item[0], href=item[0]))
+            if self._blame_folder is not None:
+                blame_file = os.path.join(self._blame_folder, path_functions.get_blame_name(item[0]))
+                if os.path.exists(blame_file):
+                    blame_element = ET.SubElement(row, 'td')
+                    blame_element.append(self._create_element('a', text='blame', href=blame_file))
             row.append(self._create_element('td', text=str(item[1])))
         return table
 
