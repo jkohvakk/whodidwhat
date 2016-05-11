@@ -1,4 +1,5 @@
 from collections import defaultdict
+import xml.etree.ElementTree as ET
 import fnmatch
 import path_functions
 
@@ -71,19 +72,7 @@ class Statistics(object):
         return self._get_changes_by_folders(self._commit_counts_by_file)
 
     def get_full(self):
-        statistics = self.printer.top_changed_lines_by_user_header()
-        statistics += self.printer.write(self.get_changed_lines_by_users())
-        statistics += self.printer.top_commit_counts_by_user_header()
-        statistics += self.printer.write(self.get_commit_counts_by_users())
-        statistics += self.printer.top_changed_lines_in_folders_header()
-        statistics += self.printer.write_folders(self.get_changed_lines_by_folders())
-        statistics += self.printer.top_commit_counts_in_folders_header()
-        statistics += self.printer.write_folders(self.get_commit_counts_by_folders())
-        statistics += self.printer.top_changed_lines_in_files_header()
-        statistics += self.printer.write(self.get_changed_lines_by_files())
-        statistics += self.printer.top_commit_counts_in_files_header()
-        statistics += self.printer.write(self.get_commit_counts_by_files())
-        return statistics
+        return self.printer.get_full(self)
 
 
 class HtmlPrinter(object):
@@ -91,8 +80,92 @@ class HtmlPrinter(object):
     def __init__(self, blame_folder):
         self._blame_folder = blame_folder
 
+    def get_full(self, statistics):
+        html = ET.Element('html')
+        head = ET.SubElement(html, 'head')
+        style = ET.SubElement(head, 'style')
+        style.text = '''\
+table {
+    border-collapse: collapse;
+}
+
+table, td, th {
+    border: 1px solid black;
+}'''
+        body = ET.SubElement(html, 'body')
+        body.append(self.top_changed_lines_by_user_header())
+        body.append(self.write(statistics.get_changed_lines_by_users()))
+        body.append(self.top_commit_counts_by_user_header())
+        body.append(self.write(statistics.get_commit_counts_by_users()))
+        body.append(self.top_changed_lines_in_folders_header())
+        body.append(self.write_folders(statistics.get_changed_lines_by_folders()))
+        body.append(self.top_commit_counts_in_folders_header())
+        body.append(self.write_folders(statistics.get_commit_counts_by_folders()))
+        body.append(self.top_changed_lines_in_files_header())
+        body.append(self.write(statistics.get_changed_lines_by_files()))
+        body.append(self.top_commit_counts_in_files_header())
+        body.append(self.write(statistics.get_commit_counts_by_files()))
+        return ET.tostring(html, method='html')
+
+    def write(self, statistic, limit=None):
+        table = ET.Element('table')
+        for item in sorted(statistic.items(), key=lambda it: (-it[1], it[0]))[:limit]:
+            row = ET.SubElement(table, 'tr')
+            row.append(self._create_element('td', text=str(item[0])))
+            row.append(self._create_element('td', text=str(item[1])))
+        return table
+
+    def write_folders(self, level_list):
+        table = ET.Element('table')
+        for i, folder_level in enumerate(level_list):
+            row = ET.SubElement(table, 'tr')
+            row.append(self._create_element('td', text='level'))
+            row.append(self._create_element('td', text=str(i + 1)))
+            subtable = ET.SubElement(row, 'td')
+            subtable.append(self.write(folder_level, 7))
+        return table
+
+    def top_changed_lines_by_user_header(self):
+        return self._create_element('h2', text='Top changed lines by user')
+
+    def top_commit_counts_by_user_header(self):
+        return self._create_element('h2', text='Top commit counts by user')
+
+    def top_changed_lines_in_folders_header(self):
+        return self._create_element('h2', text='Top changed lines in folders')
+
+    def top_commit_counts_in_folders_header(self):
+        return self._create_element('h2', text='Top commit counts in folders')
+
+    def top_changed_lines_in_files_header(self):
+        return self._create_element('h2', text='Top changed lines in files')
+
+    def top_commit_counts_in_files_header(self):
+        return self._create_element('h2', text='Top commit counts in files')
+
+    def _create_element(self, tag, text=''):
+        e = ET.Element(tag)
+        if text:
+            e.text = text
+        return e
+
 
 class TextPrinter(object):
+
+    def get_full(self, statistics):
+        full = self.top_changed_lines_by_user_header()
+        full += self.write(statistics.get_changed_lines_by_users())
+        full += self.top_commit_counts_by_user_header()
+        full += self.write(statistics.get_commit_counts_by_users())
+        full += self.top_changed_lines_in_folders_header()
+        full += self.write_folders(statistics.get_changed_lines_by_folders())
+        full += self.top_commit_counts_in_folders_header()
+        full += self.write_folders(statistics.get_commit_counts_by_folders())
+        full += self.top_changed_lines_in_files_header()
+        full += self.write(statistics.get_changed_lines_by_files())
+        full += self.top_commit_counts_in_files_header()
+        full += self.write(statistics.get_commit_counts_by_files())
+        return full
 
     def write(self, statistic, limit=None):
         text = ''
