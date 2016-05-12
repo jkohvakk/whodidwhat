@@ -29,7 +29,7 @@ class SvnFilter(object):
 
     def write_statistics(self, parameters):
         if parameters.statistics_file:
-            if os.path.splitext(parameters.statistics_file).lower() in ('.htm, .html'):
+            if os.path.splitext(parameters.statistics_file)[-1].lower() in ('.htm', '.html'):
                 self._statistics.set_printer(statistics.HtmlPrinter(parameters.blame_folder))
             with open(parameters.statistics_file, 'w') as statistics_file:
                 statistics_file.write(self._statistics.get_full())
