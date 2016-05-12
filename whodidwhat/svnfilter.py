@@ -73,6 +73,7 @@ class SvnFilter(object):
                 filename = filename.replace(svnlogtext.repository.prefix, '')
                 filename = filename.lstrip(os.path.sep)
                 return self._merge_common_parts(svnlogtext.repository.url, filename)
+        raise Exception('Server name for filename {} not known'.format(filename))
 
     def _merge_common_parts(self, repository, filename):
         repository_in_parts = path_functions.split_all(repository)
