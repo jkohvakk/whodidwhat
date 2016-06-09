@@ -1,6 +1,9 @@
 import os
 
 
+MAX_LINUX_FILENAME_LEN = 255
+
+
 def split_all(path):
     parts = []
     while True:
@@ -20,4 +23,5 @@ def get_all_folder_levels(path):
 
 def get_blame_name(server_name):
         blame_name = server_name.replace('://', '.')
-        return blame_name.replace('/', '.')
+        blame_name = blame_name.replace('/', '.')
+        return blame_name[-MAX_LINUX_FILENAME_LEN:]

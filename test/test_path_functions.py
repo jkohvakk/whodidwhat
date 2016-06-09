@@ -12,6 +12,18 @@ class TestFileNameFunctions(unittest.TestCase):
         self.assertEqual(['first'], whodidwhat.path_functions.get_all_folder_levels('first/foo.cpp'))
         self.assertEqual(['first', 'first/second'], whodidwhat.path_functions.get_all_folder_levels('first/second/foo.cpp'))
 
+    def test_get_blame_name(self):
+        self.assertEqual('https.svne.com.testsuite.test.robot',
+                         whodidwhat.path_functions.get_blame_name('https://svne.com/testsuite/test.robot'))
+
+    def test_get_blame_name_really_long_path(self):
+        blame_name = whodidwhat.path_functions.get_blame_name('https://svne1.access.nsn.com/isource/svnroot/\
+robotlte/trunk/testsuite/DCM/user_plane/LTE2243/LTE2243_A_j/\
+LTE2243_A_j_Ab_208_03_target_pcell_and_2source_Scell_deletion_at_timing_C_when_Exchange_of_PCell_and_Scell_Intra_eNB_Inter-LSP_HO_switch_the_other_scell_to _new.robot')
+        self.assertEqual(255, len(blame_name))
+        self.assertEqual('cess.nsn.com.isource.svnroot.\
+robotlte.trunk.testsuite.DCM.user_plane.LTE2243.LTE2243_A_j.\
+LTE2243_A_j_Ab_208_03_target_pcell_and_2source_Scell_deletion_at_timing_C_when_Exchange_of_PCell_and_Scell_Intra_eNB_Inter-LSP_HO_switch_the_other_scell_to _new.robot', blame_name)
 
 if __name__ == '__main__':
     unittest.main()
