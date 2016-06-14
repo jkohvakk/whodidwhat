@@ -1,23 +1,15 @@
-import os
-
-
 MAX_LINUX_FILENAME_LEN = 255
 
 
 def split_all(path):
-    parts = []
-    while True:
-        path, last = os.path.split(path)
-        parts.insert(0, last)
-        if not path or path == os.path.sep:
-            return parts
+    return path.split('/')
 
 
 def get_all_folder_levels(path):
     folders = split_all(path)[:-1]
     folder_levels = []
     for i in range(1, len(folders) + 1):
-        folder_levels.append(os.path.sep.join(folders[:i]))
+        folder_levels.append('/'.join(folders[:i]))
     return folder_levels
 
 
