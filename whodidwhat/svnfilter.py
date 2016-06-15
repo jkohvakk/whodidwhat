@@ -71,7 +71,7 @@ class SvnFilter(object):
         for svnlogtext in svnlogtexts:
             if svnlogtext.repository and svnlogtext.repository.prefix in filename:
                 filename = filename.replace(svnlogtext.repository.prefix, '')
-                filename = filename.lstrip(os.path.sep)
+                filename = filename.lstrip('/').lstrip('\\')
                 return self._merge_common_parts(svnlogtext.repository.url, filename)
         raise Exception('Server name for filename {} not known'.format(filename))
 
@@ -81,8 +81,8 @@ class SvnFilter(object):
         for repo_part in repository_in_parts:
             if repo_part in filename_in_parts:
                 filename_in_parts.remove(repo_part)
-        filename = os.path.join(*filename_in_parts) if filename_in_parts else ''
-        return os.path.join(repository, filename)
+        filename = '/'.join(filename_in_parts) if filename_in_parts else ''
+        return '/'.join([repository.rstrip('/'), filename.lstrip('/')])
 
     def find_active_files(self, et):
         root = et.getroot()
@@ -172,7 +172,7 @@ class SvnFilter(object):
     def _prefix_paths_by_url_prefix(self, logentry, xml_log):
         for path in logentry.find('paths'):
             if xml_log.repository:
-                path.text = os.path.join('/', xml_log.repository.prefix, path.text[1:])
+                path.text = '/' + xml_log.repository.prefix + '/' + path.text[1:]
 
     def _sort_combined_tree_by_date(self, result_et, result_root):
         logentries = result_root.getchildren()
