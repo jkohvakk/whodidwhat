@@ -133,7 +133,7 @@ basvodde
         self.log_filter._userlist = ['jkohvakk']
         _, entries = self.log_filter.get_logs_by_users([SvnLogText(self.svn_xml_text, repo)])
         self.assertEqual('/foo/bar/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py',
-                         entries[0].find('paths')[0].text)
+                         entries[0].find('paths')[1].text)
 
     def test_find_active_files(self):
         xml_log_text = [SvnLogText(self.svn_xml_text, RepositoryUrl('https://svn.com/'))]
@@ -186,9 +186,21 @@ basvodde
         open_mock.assert_called_once_with('combine.cpp', 'w')
         open_mock().write.assert_called_with(self.LINES_BY_TEAM)
 
+    @patch('whodidwhat.svnfilter.os')
+    def test_blame_active_files_creates_blame_folder_if_it_does_not_exits(self, os_mock):
+        tree = MagicMock()
+        params = argparse.Namespace(blame_folder='blame', combine_blame=None, revision=None)
+        os_mock.path.isdir.return_value = False
+
+        self.log_filter.blame_active_files(params, tree)
+
+        os_mock.path.isdir.assert_called_once_with('blame')
+        os_mock.mkdir.assert_called_once_with('blame')
+
+    @patch('whodidwhat.svnfilter.os.mkdir')
     @patch('whodidwhat.svnfilter.subprocess.check_output')
     @patch('__builtin__.open', new_callable=mock_open)
-    def test_blame_active_files_happy_path(self, open_mock, check_output_mock):
+    def test_blame_active_files_happy_path(self, open_mock, check_output_mock, ignore_mkdir):
         xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
         self.log_filter._input_xmls = xml_log_text
         self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
@@ -204,10 +216,12 @@ basvodde
         self.assertEqual(self.log_filter._statistics.printer.write(self.log_filter._statistics.get_changed_lines_by_files()),
                          'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py: 6\n')
 
+    @patch('whodidwhat.svnfilter.os.mkdir')
     @patch('whodidwhat.svnfilter.SvnFilter.blame_only_given_users')
     @patch('whodidwhat.svnfilter.subprocess.check_output')
     @patch('__builtin__.open', new_callable=mock_open)
-    def test_blame_active_files_no_blame_written_if_file_deleted_from_svn(self, open_mock, check_output_mock, blame_only_given_users_mock):
+    def test_blame_active_files_no_blame_written_if_file_deleted_from_svn(self, open_mock, check_output_mock,
+                                                                          blame_only_given_users_mock, ignore_mkdir):
         blame_only_given_users_mock.return_value = ('This is blame of 1 line', 1)
         check_output_mock.side_effect = subprocess.CalledProcessError(1, 'Path not found')
         xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
@@ -222,9 +236,11 @@ basvodde
         check_output_mock.assert_called_once_with(['svn', 'blame', 'https://svn.com/exercises/number_guessing_game/tst/test_number_guessing_game.py'])
         self.assertEqual([], open_mock().write.mock_calls)
 
+    @patch('whodidwhat.svnfilter.os.mkdir')
     @patch('whodidwhat.svnfilter.subprocess.check_output')
     @patch('__builtin__.open', new_callable=mock_open)
-    def test_blame_active_files_no_blame_written_if_no_more_blamed_lines_by_team(self, open_mock, check_output_mock):
+    def test_blame_active_files_no_blame_written_if_no_more_blamed_lines_by_team(self, open_mock, check_output_mock,
+                                                                                 ignore_mkdir):
         xml_log_text = [SvnLogText(self.SMALLEST_XML, RepositoryUrl('https://svn.com/', 'python_intermediate'))]
         self.log_filter._input_xmls = xml_log_text
         self.log_filter._userlist = ['happydude']

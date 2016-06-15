@@ -14,6 +14,6 @@ def get_all_folder_levels(path):
 
 
 def get_blame_name(server_name):
-        blame_name = server_name.replace('://', '.')
-        blame_name = blame_name.replace('/', '.')
-        return blame_name[-MAX_LINUX_FILENAME_LEN:]
+    blame_name = server_name.replace('://', '.')
+    blame_name = blame_name.replace('/', '.')
+    return blame_name[-MAX_LINUX_FILENAME_LEN:]

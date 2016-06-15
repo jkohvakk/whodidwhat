@@ -39,6 +39,8 @@ class SvnFilter(object):
     def blame_active_files(self, parameters, filtered_et):
         active_files = self.find_active_files(filtered_et)
         total_blamed_lines = ''
+        if parameters.blame_folder and not os.path.isdir(parameters.blame_folder):
+            os.mkdir(parameters.blame_folder)
         for filename in active_files:
             try:
                 blame_log = subprocess.check_output(self._blame_command(filename, parameters))
@@ -90,8 +92,9 @@ class SvnFilter(object):
             author = logentry.find('author').text
             self._statistics.add_commit_count(author)
             for path in logentry.find('paths'):
-                server_name = self.get_server_name(path.text, self._input_xmls)
-                self._statistics.add_commit_count_of_file(server_name)
+                if path.attrib['kind'] == 'file':
+                    server_name = self.get_server_name(path.text, self._input_xmls)
+                    self._statistics.add_commit_count_of_file(server_name)
         return self._statistics.get_committed_files()
 
     def blame_only_given_users(self, blame_log, server_name):

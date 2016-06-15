@@ -48,6 +48,11 @@
 <paths>
 <path
    action="A"
+   kind="dir"
+   prop-mods="false"
+   text-mods="false">/python_intermediate/exercises/number_guessing_game/tst</path>
+<path
+   action="A"
    prop-mods="false"
    text-mods="true"
    kind="file">/python_intermediate/exercises/number_guessing_game/tst/test_number_guessing_game.py</path>
