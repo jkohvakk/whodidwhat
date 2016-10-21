@@ -25,7 +25,7 @@ class SvnFilter(object):
         filtered_element_tree = self.filter_logs_by_users(self._input_xmls, parameters)
         if parameters.blame_folder or parameters.combine_blame:
             self.blame_active_files(parameters, filtered_element_tree)
-        self.write_statistics(parameters)
+            self.write_statistics(parameters)
 
     def write_statistics(self, parameters):
         if parameters.statistics_file:
@@ -126,7 +126,15 @@ class SvnFilter(object):
         p.add_argument('--statistics-file', help='file to store statistics on the run instead of printing on screen')
         p.add_argument('--exclude', help='file name pattern to exclude from statistics and blame', action='append')
         p.add_argument('--combine-blame', help='combine all blamed lines by team into one giant file')
-        return p.parse_args(argv[1:])
+        params = p.parse_args(argv[1:])
+        self._check_validity_of_param_combinations(params)
+        return params
+
+    def _check_validity_of_param_combinations(self, params):
+        if params.input_xml and params.input_svn_repos:
+            sys.exit('Error: Options --input-xml and --input-svn-repos are mutually exclusive')
+        if params.statistics_file and not (params.blame_folder or params.combine_blame):
+            sys.exit('Error: Statistics is only counted together with blame options')
 
     def _get_xml_logs(self, parameters):
         repositories = self._read_repository_urls(parameters.input_svn_repos)
