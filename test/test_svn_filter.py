@@ -50,7 +50,6 @@ basvodde
         self.assertEqual(['basvodde', 'jkohvakk', 'kmikajar'],
                          self.log_filter.read_userlist(StringIO.StringIO(userlist)))
 
-    @unittest.SkipTest
     @patch('whodidwhat.svnfilter.sys.stdout')
     def test_parse_parameters_and_filter_one_xml(self, mock_stdout):
         expected_xml = os.path.join(MODULE_DIR, 'expected', 'filtered.xml')
@@ -136,7 +135,7 @@ basvodde
                          entries[0].find('paths')[1].text)
 
     def test_find_active_files(self):
-        xml_log_text = [SvnLogText(self.svn_xml_text, RepositoryUrl('https://svn.com/'))]
+        xml_log_text = [SvnLogText(self.svn_xml_text, RepositoryUrl('https://svn.com/', 'svn'))]
         self.log_filter._input_xmls = xml_log_text
         self.log_filter._userlist = ['kmikajar', 'jkohvakk', 'dems1e72']
 
@@ -259,6 +258,12 @@ basvodde
                          self.log_filter.get_server_name('/statsvn/stats.cpp', log_texts))
         self.assertEqual('https://svn.com/foo/bar/dadadii/stats.cpp',
                          self.log_filter.get_server_name('/foobar/bar/dadadii/stats.cpp', log_texts))
+
+    def test_get_server_name_if_prefixes_are_not_given(self):
+        log_texts = [SvnLogText('', RepositoryUrl('https://svn.com/foo/bar/dadadii')),
+                     SvnLogText('', RepositoryUrl('https://googlecode.com/statsvn'))]
+        with self.assertRaisesRegexp(Exception, "Server name for filename '/foobar/bar/dadadii/stats.cpp' not known, please give repository alias in repository file"):
+            self.log_filter.get_server_name('/foobar/bar/dadadii/stats.cpp', log_texts)
 
     RAW_BLAME_TEXT = '''\
 308498   jawinter class RammbockCore(object):
