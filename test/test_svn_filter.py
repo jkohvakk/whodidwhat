@@ -256,14 +256,24 @@ basvodde
                      SvnLogText('', RepositoryUrl('https://googlecode.com/statsvn', 'statsvn'))]
         self.assertEqual('https://googlecode.com/statsvn/stats.cpp',
                          self.log_filter.get_server_name('/statsvn/stats.cpp', log_texts))
-        self.assertEqual('https://svn.com/foo/bar/dadadii/stats.cpp',
-                         self.log_filter.get_server_name('/foobar/bar/dadadii/stats.cpp', log_texts))
+        self.assertEqual('https://svn.com/foo/bar/dadadii/tool/big_gun.py',
+                         self.log_filter.get_server_name('/foobar/foo/bar/dadadii/tool/big_gun.py', log_texts))
 
     def test_get_server_name_if_prefixes_are_not_given(self):
         log_texts = [SvnLogText('', RepositoryUrl('https://svn.com/foo/bar/dadadii')),
                      SvnLogText('', RepositoryUrl('https://googlecode.com/statsvn'))]
-        with self.assertRaisesRegexp(Exception, "Server name for filename '/foobar/bar/dadadii/stats.cpp' not known, please give repository alias in repository file"):
-            self.log_filter.get_server_name('/foobar/bar/dadadii/stats.cpp', log_texts)
+        with self.assertRaisesRegexp(Exception, "Server name for filename '/statsvn/stats.cpp' not known, please give repository alias in repository file"):
+            self.log_filter.get_server_name('/statsvn/stats.cpp', log_texts)
+
+    def test_get_server_name_should_not_match_when_prefix_is_not_in_the_beginning_and_not_a_full_dir_name(self):
+        log_texts = [SvnLogText('', RepositoryUrl('https://svn.com/foo/bar/dadadii', 'foobar')),
+                     SvnLogText('', RepositoryUrl('https://googlecode.com/statsvn', 'statsvn'))]
+        with self.assertRaisesRegexp(Exception, "Server name for filename '/bar/foobar/dadadii/foobarstats.cpp' not known, please give repository alias in repository file"):
+            self.log_filter.get_server_name('/bar/foobar/dadadii/foobarstats.cpp', log_texts)
+        with self.assertRaisesRegexp(Exception, "Server name for filename '/bar/dadadii/foobarstats.cpp' not known, please give repository alias in repository file"):
+            self.log_filter.get_server_name('/bar/dadadii/foobarstats.cpp', log_texts)
+        with self.assertRaisesRegexp(Exception, "Server name for filename '/foobarish/bar/dadadii/stats.cpp' not known, please give repository alias in repository file"):
+            self.log_filter.get_server_name('/foobarish/bar/dadadii/stats.cpp', log_texts)
 
     RAW_BLAME_TEXT = '''\
 308498   jawinter class RammbockCore(object):

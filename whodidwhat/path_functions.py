@@ -2,7 +2,7 @@ MAX_LINUX_FILENAME_LEN = 255
 
 
 def split_all(path):
-    return path.split('/')
+    return [directory for directory in path.split('/') if directory]
 
 
 def get_all_folder_levels(path):

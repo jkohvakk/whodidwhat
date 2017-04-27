@@ -71,11 +71,16 @@ class SvnFilter(object):
 
     def get_server_name(self, filename, svnlogtexts):
         for svnlogtext in svnlogtexts:
-            if svnlogtext.repository.prefix and svnlogtext.repository.prefix in filename:
+            if self._beginswith(filename, svnlogtext.repository.prefix):
                 filename = filename.replace(svnlogtext.repository.prefix, '')
                 filename = filename.lstrip('/').lstrip('\\')
                 return self._merge_common_parts(svnlogtext.repository.url, filename)
         raise Exception('Server name for filename \'{}\' not known, please give repository alias in repository file'.format(filename))
+
+    def _beginswith(self, filename, prefix):
+        if not prefix:
+            return False
+        return prefix == path_functions.split_all(filename)[0]
 
     def _merge_common_parts(self, repository, filename):
         repository_in_parts = path_functions.split_all(repository)
