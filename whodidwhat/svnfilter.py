@@ -4,6 +4,7 @@ import os
 import subprocess
 import argparse
 import re
+import pkg_resources
 from datetime import datetime
 
 import statistics
@@ -131,9 +132,14 @@ class SvnFilter(object):
         p.add_argument('--statistics-file', help='file to store statistics on the run instead of printing on screen')
         p.add_argument('--exclude', help='file name pattern to exclude from statistics and blame', action='append')
         p.add_argument('--combine-blame', help='combine all blamed lines by team into one giant file')
+        p.add_argument('--version', '-v', action='version', help='print version', version=self.get_version())
         params = p.parse_args(argv[1:])
         self._check_validity_of_param_combinations(params)
         return params
+
+    def get_version(self):
+        name = 'whodidwhat'
+        return '{} {}'.format(name, pkg_resources.get_distribution(name).version)
 
     def _check_validity_of_param_combinations(self, params):
         if params.input_xml and params.input_svn_repos:
