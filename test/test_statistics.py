@@ -1,8 +1,8 @@
 from whodidwhat.statistics import Statistics, HtmlPrinter
-from whodidwhat.path_functions import get_blame_name
 import unittest
 import xml.etree.ElementTree as ET
 import mock
+
 
 class TestStatistics(unittest.TestCase):
 
@@ -88,7 +88,7 @@ trunk: 1
 ---------------- level 2 ---------------------------------
 spike/deep_nesting: 1
 ==========================================================
-Top committed folders:
+Top aggregate count of committed files in folders:
 ---------------- level 1 ---------------------------------
 branch: 2
 spike: 1
@@ -220,7 +220,7 @@ class TestHtmlStatistics(unittest.TestCase):
                          ET.tostring(self.statistics.printer.top_changed_lines_in_folders_header()))
 
     def test_top_commit_counts_in_folders_header(self):
-        self.assertEqual('<h2>Top commit counts in folders</h2>',
+        self.assertEqual('<h2>Top aggregate count of committed files in folders</h2>',
                          ET.tostring(self.statistics.printer.top_commit_counts_in_folders_header()))
 
     def test_top_changed_lines_in_files_header(self):

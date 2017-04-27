@@ -150,7 +150,7 @@ table, td, th {
         return self._create_element('h2', text='Top changed lines in folders')
 
     def top_commit_counts_in_folders_header(self):
-        return self._create_element('h2', text='Top commit counts in folders')
+        return self._create_element('h2', text='Top aggregate count of committed files in folders')
 
     def top_changed_lines_in_files_header(self):
         return self._create_element('h2', text='Top changed lines in files')
@@ -219,7 +219,7 @@ Top changed lines in folders:
     def top_commit_counts_in_folders_header(self):
         return '''\
 ==========================================================
-Top committed folders:
+Top aggregate count of committed files in folders:
 '''
 
     def top_changed_lines_in_files_header(self):
